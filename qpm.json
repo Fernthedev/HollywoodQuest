@@ -1,0 +1,38 @@
+{
+  "sharedDir": "shared",
+  "dependenciesDir": "extern",
+  "info": {
+    "name": "Hollywood",
+    "id": "hollywood",
+    "version": "0.1.0",
+    "url": "https://github.com/Fernthedev/HollywoodQuest",
+    "additionalData": {
+      "overrideSoName": "libhollywood.so"
+    }
+  },
+  "dependencies": [
+    {
+      "id": "codegen",
+      "versionRange": "^0.18.2",
+      "additionalData": {
+        "private": true
+      }
+    },
+    {
+      "id": "custom-types",
+      "versionRange": "^0.14.1",
+      "additionalData": {}
+    },
+    {
+      "id": "beatsaber-hook",
+      "versionRange": "^3.5.1",
+      "additionalData": {}
+    },
+    {
+      "id": "modloader",
+      "versionRange": "^1.2.3",
+      "additionalData": {}
+    }
+  ],
+  "additionalData": {}
+}
