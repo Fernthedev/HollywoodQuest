@@ -16,16 +16,16 @@ Rav1eVideoEncoder::Rav1eVideoEncoder(const uint32_t width, const uint32_t height
                                                             bitrate(bitrate) {}
 void Rav1eVideoEncoder::Init() {
     if (context || initialized) {
-        log("Initialized already, throwing");
+        HLogger.fmtLog<Paper::LogLevel::INF>("Initialized already, throwing");
         throw std::runtime_error("Context is already initialized");
     }
 
-    log("Initializing rav1e video encoder");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Initializing rav1e video encoder");
 
     outfile = std::ofstream(filename);
     if (!outfile)
     {
-        log("Could not open %s", filename.c_str());
+        HLogger.fmtLog<Paper::LogLevel::INF>("Could not open {}", filename.c_str());
         return;
     }
 
@@ -93,7 +93,7 @@ void Rav1eVideoEncoder::Init() {
     outfile.write(reinterpret_cast<const char *>(sequenceHeader->data), sequenceHeader->len);
     rav1e_data_unref(sequenceHeader);
 
-    log("Finished rav1e setup");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Finished rav1e setup");
 
     encodingThread = std::thread(&Rav1eVideoEncoder::EncodeLoop, this);
 }
@@ -114,7 +114,7 @@ size_t Rav1eVideoEncoder::approximateFramesToRender() {
 void Rav1eVideoEncoder::Encode(rgb24* data) {
 #define CLEAN Finish(); CRASH_UNLESS(false);
 
-    log("Encoding!");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Encoding!");
     // https://github.com/kornelski/cavif-rs/blob/b0a2d76db91b941ec713e8a1345940223a26f48b/ravif/src/av1encoder.rs#L103
 
 
@@ -133,7 +133,7 @@ void Rav1eVideoEncoder::Encode(rgb24* data) {
 
     int ret = 0;
 
-    log("Filling frame");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Filling frame");
     try {
 //        rav1e_frame_fill_plane(frame, 1, reinterpret_cast<uint8_t *>(data), calculateFrameSize(width, height), static_cast<ptrdiff_t>(3), 1); // stride is 3 because 3 data fields
         rav1e_frame_fill_plane(frame, 0, yPlane, len, static_cast<ptrdiff_t>(1),
@@ -148,13 +148,13 @@ void Rav1eVideoEncoder::Encode(rgb24* data) {
     delete[] uPlane;
     delete[] vPlane;
     CheckError();
-    log("Frame filled %u", len * 3);
+    HLogger.fmtLog<Paper::LogLevel::INF>("Frame filled {}", len * 3);
 
     HandleError(rav1e_send_frame(context, frame));
-    log("Frame sent");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Frame sent");
 
     } catch (std::exception &e) {
-        log("Crash: %s", e.what());
+        HLogger.fmtLog<Paper::LogLevel::INF>("Crash: {}", e.what());
         CRASH_UNLESS(false);
         throw e;
     }
@@ -164,12 +164,12 @@ void Rav1eVideoEncoder::Encode(rgb24* data) {
         ret = rav1e_receive_packet(context, &p);
         CheckError();
         if (ret < 0) {
-            log("Unable to receive packet %d", ret);
+            HLogger.fmtLog<Paper::LogLevel::INF>("Unable to receive packet {}", ret);
             CLEAN
         } else if (ret == RA_ENCODER_STATUS_SUCCESS) {
-            log("Write!");
-            log("Packet %" PRIu64"", p->len);
-            log("Data %p %zu", p->data, p->len);
+            HLogger.fmtLog<Paper::LogLevel::INF>("Write!");
+            HLogger.fmtLog<Paper::LogLevel::INF>("Packet {}", p->len);
+            HLogger.fmtLog<Paper::LogLevel::INF>("Data {} {}", fmt::ptr(p->data), p->len);
 
             outfile.write(reinterpret_cast<const char *>(p->data), p->len);
             outfile.flush();
@@ -177,7 +177,7 @@ void Rav1eVideoEncoder::Encode(rgb24* data) {
             rav1e_packet_unref(p);
             break;
         } else if (ret == RA_ENCODER_STATUS_NEED_MORE_DATA) {
-            log("Need more frame data %lu", p->input_frameno);
+            HLogger.fmtLog<Paper::LogLevel::INF>("Need more frame data {}", p->input_frameno);
 
 //            if (p->input_frameno > 0 && p->input_frameno % 10 == 0) {
 //                HandleError(rav1e_send_frame(context, NULL)); // flush every 10 frames
@@ -186,19 +186,19 @@ void Rav1eVideoEncoder::Encode(rgb24* data) {
 
             break;
 //            if (ret < 0) {
-//                log("Unable to send frame %d", 0);
+//                HLogger.fmtLog<Paper::LogLevel::INF>("Unable to send frame %d", 0);
 //                CLEAN
 //            } else if (ret > 0) {
 //                // Cannot happen in normal conditions
-//                log("Unable to append frame %d to the internal queue", 0);
+//                HLogger.fmtLog<Paper::LogLevel::INF>("Unable to append frame %d to the internal queue", 0);
 //                CLEAN
 //            }
         } else if (ret == RA_ENCODER_STATUS_LIMIT_REACHED) {
-            log("Limit reached");
+            HLogger.fmtLog<Paper::LogLevel::INF>("Limit reached");
             rav1e_packet_unref(p);
             break;
         } else if (ret > 0) {
-            log("Too many frames!");
+            HLogger.fmtLog<Paper::LogLevel::INF>("Too many frames!");
             rav1e_packet_unref(p);
             break;
         }
@@ -206,12 +206,12 @@ void Rav1eVideoEncoder::Encode(rgb24* data) {
 
     rav1e_frame_unref(frame);
     frame = rav1e_frame_new(context);
-    log("Finished encoding");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Finished encoding");
 #undef CLEAN
 }
 
 void Rav1eVideoEncoder::EncodeLoop() {
-    log("Starting encoding thread");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Starting encoding thread");
 
     while (initialized) {
         QueueContent frameData = nullptr;
@@ -227,13 +227,13 @@ void Rav1eVideoEncoder::EncodeLoop() {
         auto currentTime = std::chrono::high_resolution_clock::now();
         int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
 
-         log("Took %lldms to add and encode frame", (long long) duration);
+         HLogger.fmtLog<Paper::LogLevel::INF>("Took {} to add and encode frame", (long long) duration);
 
         free(frameData);
     }
 
     Finish();
-    log("Ending encoding thread");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Ending encoding thread");
 }
 
 
@@ -241,7 +241,7 @@ void Rav1eVideoEncoder::EncodeLoop() {
 Rav1eVideoEncoder::~Rav1eVideoEncoder() {
     if(initialized) Finish();
 
-    log("Deleting video capture %p", this);
+    HLogger.fmtLog<Paper::LogLevel::INF>("Deleting video capture {}", fmt::ptr(this));
 
     QueueContent frame;
     while (framebuffers.try_dequeue(frame)) {
@@ -254,7 +254,7 @@ Rav1eVideoEncoder::~Rav1eVideoEncoder() {
 void Rav1eVideoEncoder::Finish()
 {
     if(!initialized) {
-        log("Attempted to finish video capture when capture wasn't initialized, returning");
+        HLogger.fmtLog<Paper::LogLevel::INF>("Attempted to finish video capture when capture wasn't initialized, returning");
         return;
     }
     rav1e_send_frame(context, nullptr);
@@ -279,7 +279,7 @@ void Rav1eVideoEncoder::Finish()
 
 void Rav1eVideoEncoder::HandleError(void *ptr) {
     if (!ptr) {
-        log("Rav1e error!");
+        HLogger.fmtLog<Paper::LogLevel::INF>("Rav1e error!");
         CheckError();
         throw std::runtime_error("Rav1e error!");
     }
@@ -287,7 +287,7 @@ void Rav1eVideoEncoder::HandleError(void *ptr) {
 
 void Rav1eVideoEncoder::HandleError(int i) {
     if (i < 0) {
-        log("Rav1e error!");
+        HLogger.fmtLog<Paper::LogLevel::INF>("Rav1e error!");
         CheckError();
         throw std::runtime_error("Rav1e error!");
     }
@@ -296,7 +296,7 @@ void Rav1eVideoEncoder::HandleError(int i) {
 void Rav1eVideoEncoder::CheckError() {
     if (context) {
         auto code = rav1e_last_status(context);
-        log("Error: %s", rav1e_status_to_str(code));
+        HLogger.fmtLog<Paper::LogLevel::INF>("Error: {}", rav1e_status_to_str(code));
     }
 }
 

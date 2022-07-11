@@ -19,7 +19,7 @@ void AudioCapture::OpenFile(const std::string& filename) {
         writer.close();
     }
 
-    log("Audio file %s", filename.c_str());
+    HLogger.fmtLog<Paper::LogLevel::INF>("Audio file {}", filename.c_str());
     writer.open(filename, std::ios::binary);
 }
 
@@ -35,14 +35,14 @@ void AudioCapture::Write(Array<float>* audioData) {
 }
 
 void AudioCapture::Save() {
-    log("Closing audio file and adding header");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Closing audio file and adding header");
     AddHeader();
     writer.close();
     Rendering = false;
 }
 
 void AudioCapture::AddHeader() {
-    log("Rendering is %i", Rendering);
+    HLogger.fmtLog<Paper::LogLevel::INF>("Rendering is {}", Rendering);
     if(Rendering) {
         long samples = writer.tellp() / (BITS_PER_SAMPLE / 8);
 
@@ -96,7 +96,7 @@ void AudioCapture::AddHeader() {
 }
 
 void AudioCapture::OnAudioFilterRead(Array<float>* data, int audioChannels) {
-    // log("Got data");
+    // HLogger.fmtLog<Paper::LogLevel::INF>("Got data");
     if(Rendering) {
         // store the number of channels we are rendering
         if(audioChannels > 0) channels = audioChannels;

@@ -27,19 +27,17 @@ using namespace UnityEngine;
 
 DEFINE_TYPE(Hollywood, CameraCapture);
 
-// TODO: This should be injected by constructor and allow modification at runtime e.g setCameraTexture
-extern UnityEngine::RenderTexture *texture;
 
 std::optional<std::chrono::time_point<std::chrono::steady_clock>> lastRecordedTime;
 
 void CameraCapture::ctor()
 {
     requests = RequestList();
-    log("Making video capture");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Making video capture");
 }
 
 void CameraCapture::Init(CameraRecordingSettings const &settings) {
-    capture = std::make_unique<VideoCapture>(texture->get_width(), texture->get_height(), settings.fps, settings.fps, !settings.movieModeRendering, "faster", "/sdcard/video.h264");
+    capture = std::make_unique<VideoCapture>(readOnlyTexture->get_width(), readOnlyTexture->get_height(), settings.fps, settings.fps, !settings.movieModeRendering, "faster", "/sdcard/video.h264");
 
     // rav1e
     //    capture = std::make_unique<Hollywood::Rav1eVideoEncoder>(texture->get_width(), texture->get_height(), 60, "/sdcard/video.h264", 30000); //rav1e
@@ -54,7 +52,7 @@ void CameraCapture::RequestFrame() {
     frameRequestCount++;
 }
 
-UnityEngine::RenderTexture* GetTemporaryRenderTexture(Hollywood::AbstractVideoEncoder* capture, int format)
+inline UnityEngine::RenderTexture* GetTemporaryRenderTexture(Hollywood::AbstractVideoEncoder* capture, int format)
 {
     UnityEngine::RenderTexture* rt = RenderTexture::GetTemporary(capture->getWidth(), capture->getHeight(), 0, (RenderTextureFormat) format, RenderTextureReadWrite::Default);
     rt->set_wrapMode(TextureWrapMode::Clamp);
@@ -112,6 +110,7 @@ void CameraCapture::OnRenderImage(UnityEngine::RenderTexture *source, UnityEngin
 
 #pragma endregion
 
+// Request frame here
 void CameraCapture::OnPostRender() {
     if (recordingSettings.movieModeRendering) {
         return;
@@ -139,15 +138,15 @@ void CameraCapture::OnPostRender() {
 
         auto startTime = std::chrono::high_resolution_clock::now();
 
-        if (capture->isInitialized() && texture->m_CachedPtr.m_value != nullptr) {
+        if (capture->isInitialized() && readOnlyTexture->m_CachedPtr.m_value != nullptr) {
             if (capture->approximateFramesToRender() < maxFramesAllowedInQueue && requests.size() <= 10) {
-                requests.push_back(AsyncGPUReadbackPlugin::Request(texture));
+                requests.push_back(AsyncGPUReadbackPlugin::Request(readOnlyTexture));
             } else {
-                 log("Too many requests currently, not adding more");
+                 HLogger.fmtLog<Paper::LogLevel::WRN>("Too many requests currently, not adding more");
             }
 
-        } else if(texture->m_CachedPtr.m_value == nullptr) {
-            log("ERROR: Texture is null, can't add frame!");
+        } else if(readOnlyTexture->m_CachedPtr.m_value == nullptr) {
+            HLogger.fmtLog<Paper::LogLevel::ERR>("ERROR: Texture is null, can't add frame!");
         }
 
         auto endTime = std::chrono::high_resolution_clock::now();
@@ -164,9 +163,8 @@ void CameraCapture::OnPostRender() {
 
 // https://github.com/Alabate/AsyncGPUReadbackPlugin/blob/e8d5e52a9adba24bc0f652c39076404e4671e367/UnityExampleProject/Assets/Scripts/UsePlugin.cs#L13
 void CameraCapture::Update() {
-    if (!(capture->isInitialized() && texture->m_CachedPtr.m_value != nullptr))
+    if (!(capture->isInitialized() && readOnlyTexture->m_CachedPtr.m_value != nullptr))
         return;
-
 
 
     if (recordingSettings.movieModeRendering) {
@@ -183,7 +181,7 @@ void CameraCapture::Update() {
         AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req = *it;
         bool remove = false;
 
-        if (capture->isInitialized() && texture->m_CachedPtr.m_value != nullptr) {
+        if (capture->isInitialized() && readOnlyTexture->m_CachedPtr.m_value != nullptr) {
             req->Update();
 
             if (recordingSettings.movieModeRendering) {
@@ -192,6 +190,8 @@ void CameraCapture::Update() {
                 while (!(req->HasError() || req->IsDone())) {
                     req->Update();
                     std::this_thread::yield();
+                    // wait for the next frame or so
+                    std::this_thread::sleep_for(std::chrono::microseconds (uint32_t(1.0f / capture->getFpsRate() * 90)));
                 }
 
 
@@ -199,6 +199,7 @@ void CameraCapture::Update() {
                 if (req->IsDone() && !req->HasError() && maxFramesAllowedInQueue > 0) {
                     while (capture->approximateFramesToRender() >= maxFramesAllowedInQueue) {
                         std::this_thread::yield();
+                        std::this_thread::sleep_for(std::chrono::microseconds (uint32_t(1.0f / capture->getFpsRate() * 90)));
                     }
                 }
             }
@@ -235,7 +236,7 @@ void CameraCapture::Update() {
 }
 
 void CameraCapture::dtor() {
-    log("Camera Capture is being destroyed, finishing the capture");
+    HLogger.fmtLog<Paper::LogLevel::INF>("Camera Capture is being destroyed, finishing the capture");
     for (auto& req : requests) {
         req->Dispose();
     }
@@ -248,5 +249,5 @@ void CameraCapture::dtor() {
 
 
 RenderTexture* CameraCapture::GetProperTexture() {
-    return texture;
+    return readOnlyTexture;
 }

@@ -28,7 +28,7 @@ Shader Shader::fromFile(const char * vertexPath, const char *fragmentPath) {
     }
     catch (std::ifstream::failure& e)
     {
-        loggingFunction().error("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ");
+        HLogger.fmtThrowError("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ {}", e.what());
     }
     return Shader(vertexCode.c_str(), fragmentCode.c_str());
 }
@@ -49,9 +49,7 @@ void checkCompileErrors(unsigned int shader, const char* name) {
         // Exit with failure.
         glDeleteShader(shader); // Don't leak the shader.
         std::string s = std::string(errorLog.begin(), errorLog.end());
-        loggingFunction().error("Unable to create %s shader: %s", name, s.c_str());
-
-        throw std::runtime_error("Unable to create shader");
+        HLogger.fmtThrowError("Unable to create {} shader: {}", name, s.c_str());
     }
 }
 

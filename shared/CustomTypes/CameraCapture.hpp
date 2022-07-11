@@ -19,19 +19,25 @@
 
 #include <memory>
 
-using RequestList = std::deque<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*, gc_allocator<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*>>;
+namespace Hollywood {
+    using RequestList = std::deque<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest *, gc_allocator<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest *>>;
 
 // Default recommended settings
-struct CameraRecordingSettings {
-    int width = 1920;
-    int height = 1080;
-    int fps = 45;
-    int bitrate = 5000;
-    bool movieModeRendering = true;
-};
+    struct CameraRecordingSettings {
+        int width = 1920;
+        int height = 1080;
+        int fps = 60;
+        int bitrate = 5000;
+        bool movieModeRendering = true;
+        float fov = 90;
+    };
+}
 
 DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
 public:
+    // The texture to read
+    DECLARE_INSTANCE_FIELD(UnityEngine::RenderTexture*, readOnlyTexture);
+
     void Init(CameraRecordingSettings const& settings);
 
     CameraRecordingSettings const& getRecordingSettings() const {

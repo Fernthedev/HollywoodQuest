@@ -5,6 +5,7 @@
 
 #include <string>
 #include <shared_mutex>
+#include <thread>
 
 #include <GLES3/gl32.h>
 #include <GLES3/gl3ext.h>
@@ -14,12 +15,6 @@
 
 // Looks like this was from https://github.com/Alabate/AsyncGPUReadbackPlugin
 
-enum struct ColorConvert {
-    NONE,
-    RGB,
-    // TODO: Fix conversion
-    YUV
-};
 #pragma region ReadPixels OpenGL
 struct Task {
 	GLuint origTexture;
@@ -60,7 +55,7 @@ extern "C" int makeRequest_mainThread(GLuint texture, GLuint texture2, int miple
 
 	return event_id;
 }
-#include <thread>
+
 
 static void create_ppm(int frame_id, unsigned int width, unsigned int height, unsigned int pixel_nbytes, GLubyte* pixels) {
     //std::thread t([=]{
@@ -170,6 +165,7 @@ extern "C" void makeRequest_renderThread(int event_id) {
 
 	glViewport(0,0, task->width, task->height);
 
+    IL2CPP_CATCH_HANDLER(
 	// Enable sRGB shader
 	static Shader sRGBShader = Shader::shaderRGBGammaConvert();
 	static Shader yuvShader = Shader::shaderYUVGammaConvert();
@@ -184,6 +180,7 @@ extern "C" void makeRequest_renderThread(int event_id) {
             BlitShader(task->origTexture, yuvShader);
             break;
     }
+    )
 
 	// Create and bind pbo (pixel buffer object) to fbo
 	glGenBuffers(1, &(task->pbo));

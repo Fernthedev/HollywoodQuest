@@ -7,12 +7,11 @@
 #include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
 #include "beatsaber-hook/shared/config/config-utils.hpp"
 
+#include "paper/shared/logger.hpp"
 
 static ModInfo modInfo{
-    ID,
+    MOD_ID,
     VERSION
 };
 
-Logger& loggingFunction();
-
-#define log(...) loggingFunction().info(__VA_ARGS__)
+extern Paper::ConstLoggerContext<10> HLogger;
