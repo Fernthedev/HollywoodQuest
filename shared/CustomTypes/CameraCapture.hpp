@@ -12,11 +12,10 @@
 #include "System/Collections/Generic/List_1.hpp"
  
 #include "custom-types/shared/macros.hpp"
-#include <experimental/coroutine>
 #include "custom-types/shared/coroutine.hpp"
-
 #include "beatsaber-hook/shared/utils/gc-alloc.hpp"
 
+#include <experimental/coroutine>
 #include <memory>
 
 namespace Hollywood {
