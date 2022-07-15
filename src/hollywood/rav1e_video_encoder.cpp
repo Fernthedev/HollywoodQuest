@@ -1,3 +1,4 @@
+#ifdef USE_AV1
 #include "render/rav1e_video_encoder.hpp"
 
 #include <utility>
@@ -299,9 +300,4 @@ void Rav1eVideoEncoder::CheckError() {
         HLogger.fmtLog<Paper::LogLevel::INF>("Error: {}", rav1e_status_to_str(code));
     }
 }
-
-
-
-
-
-
+#endif

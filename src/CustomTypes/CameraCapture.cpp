@@ -1,7 +1,9 @@
 #include "CustomTypes/CameraCapture.hpp"
 
 #include "render/video_recorder.hpp"
+#ifdef USE_AV1
 #include "render/rav1e_video_encoder.hpp"
+#endif
 
 #include "main.hpp"
 
