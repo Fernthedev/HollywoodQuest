@@ -45,7 +45,8 @@ public:
 
     uint32_t maxFramesAllowedInQueue = 10;
 
-    DECLARE_INSTANCE_METHOD(void, FinishRemainingFrames);
+    DECLARE_INSTANCE_METHOD(int, remainingReadRequests);
+    DECLARE_INSTANCE_METHOD(int, remainingFramesToRender);
 
 private:
     std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;

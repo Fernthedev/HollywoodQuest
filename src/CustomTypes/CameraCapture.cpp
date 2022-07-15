@@ -237,16 +237,20 @@ void CameraCapture::Update() {
 
 }
 
-void CameraCapture::FinishRemainingFrames() {
-    for (auto& req : requests) {
-        req->Dispose();
-    }
-    requests.clear();
+int CameraCapture::remainingReadRequests() {
+    return requests.size();
+}
+
+int CameraCapture::remainingFramesToRender() {
+    return capture->approximateFramesToRender();
 }
 
 void CameraCapture::dtor() {
     HLogger.fmtLog<Paper::LogLevel::INF>("Camera Capture is being destroyed, finishing the capture");
-    FinishRemainingFrames();
+    for (auto& req : requests) {
+        req->Dispose();
+    }
+    requests.clear();
     capture.reset(); // force delete of video capture
     CancelInvoke();
 
