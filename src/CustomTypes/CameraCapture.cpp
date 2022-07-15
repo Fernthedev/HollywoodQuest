@@ -140,14 +140,14 @@ void CameraCapture::OnPostRender() {
 
         auto startTime = std::chrono::high_resolution_clock::now();
 
-        if (capture->isInitialized() && readOnlyTexture->m_CachedPtr.m_value != nullptr) {
+        if (capture->isInitialized() && readOnlyTexture && readOnlyTexture->m_CachedPtr.m_value != nullptr) {
             if (capture->approximateFramesToRender() < maxFramesAllowedInQueue && requests.size() <= 10) {
                 requests.push_back(AsyncGPUReadbackPlugin::Request(readOnlyTexture));
             } else {
                  HLogger.fmtLog<Paper::LogLevel::WRN>("Too many requests currently, not adding more");
             }
 
-        } else if(readOnlyTexture->m_CachedPtr.m_value == nullptr) {
+        } else if(readOnlyTexture && readOnlyTexture->m_CachedPtr.m_value == nullptr) {
             HLogger.fmtLog<Paper::LogLevel::ERR>("ERROR: Texture is null, can't add frame!");
         }
 
@@ -165,7 +165,7 @@ void CameraCapture::OnPostRender() {
 
 // https://github.com/Alabate/AsyncGPUReadbackPlugin/blob/e8d5e52a9adba24bc0f652c39076404e4671e367/UnityExampleProject/Assets/Scripts/UsePlugin.cs#L13
 void CameraCapture::Update() {
-    if (!(capture->isInitialized() && readOnlyTexture->m_CachedPtr.m_value != nullptr))
+    if (!(capture->isInitialized() && readOnlyTexture && readOnlyTexture->m_CachedPtr.m_value != nullptr))
         return;
 
 
@@ -237,11 +237,16 @@ void CameraCapture::Update() {
 
 }
 
-void CameraCapture::dtor() {
-    HLogger.fmtLog<Paper::LogLevel::INF>("Camera Capture is being destroyed, finishing the capture");
+void CameraCapture::FinishRemainingFrames() {
     for (auto& req : requests) {
         req->Dispose();
     }
+    requests.clear();
+}
+
+void CameraCapture::dtor() {
+    HLogger.fmtLog<Paper::LogLevel::INF>("Camera Capture is being destroyed, finishing the capture");
+    FinishRemainingFrames();
     capture.reset(); // force delete of video capture
     CancelInvoke();
 

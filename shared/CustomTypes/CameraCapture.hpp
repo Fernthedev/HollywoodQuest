@@ -45,6 +45,8 @@ public:
 
     uint32_t maxFramesAllowedInQueue = 10;
 
+    DECLARE_INSTANCE_METHOD(void, FinishRemainingFrames);
+
 private:
     std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
     int frameRequestCount = 0;
@@ -55,8 +57,6 @@ private:
  
     DECLARE_CTOR(ctor);
     DECLARE_DTOR(dtor);
-
-
 
     DECLARE_INSTANCE_METHOD(void, Update);
 
