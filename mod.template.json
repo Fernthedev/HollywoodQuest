@@ -1,0 +1,26 @@
+{
+  "_QPVersion": "0.1.2",
+  "name": "${mod_name}",
+  "id": "${mod_id}",
+  "author": "Fernthedev, Henwill8",
+  "version": "${version}",
+  "packageId": "com.beatgames.beatsaber",
+  "packageVersion": "1.24.0",
+  "description": "${mod_id}, version ${version}!",
+  "dependencies": [],
+  "modFiles": [],
+  "libraryFiles": [
+    "libavcodec.so",
+    "libavdevice.so",
+    "libavfilter.so",
+    "libavformat.so",
+    "libavutil.so",
+    "libc++_shared.so",
+    "libffmpegkit.so",
+    "libffmpegkit_abidetect.so",
+    "libswresample.so",
+    "libswscale.so"
+  ],
+  "fileCopies": [],
+  "copyExtensions": []
+}
