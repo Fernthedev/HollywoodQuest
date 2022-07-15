@@ -114,7 +114,7 @@ void CameraCapture::OnRenderImage(UnityEngine::RenderTexture *source, UnityEngin
 
 // Request frame here
 void CameraCapture::OnPostRender() {
-    if (recordingSettings.movieModeRendering) {
+    if (recordingSettings.movieModeRendering || !makeRequests) {
         return;
     }
 
@@ -169,7 +169,7 @@ void CameraCapture::Update() {
         return;
 
 
-    if (recordingSettings.movieModeRendering) {
+    if (recordingSettings.movieModeRendering && makeRequests) {
         // Add requests over time?
         auto newTexture = GetProperTexture();
 
@@ -180,61 +180,65 @@ void CameraCapture::Update() {
 
     auto it = requests.begin();
     while (it != requests.end()) {
-        AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req = *it;
-        bool remove = false;
-
-        if (capture->isInitialized() && readOnlyTexture->m_CachedPtr.m_value != nullptr) {
-            req->Update();
-
-            if (recordingSettings.movieModeRendering) {
-                // TODO: Should we lock on waiting for the request to be done? Would that cause the OpenGL thread to freeze?
-                // This doesn't freeze OpenGL. Should this still be done though?
-                while (!(req->HasError() || req->IsDone())) {
-                    req->Update();
-                    std::this_thread::yield();
-                    // wait for the next frame or so
-                    std::this_thread::sleep_for(std::chrono::microseconds (uint32_t(1.0f / capture->getFpsRate() * 90)));
-                }
-
-
-                // This is to avoid having a frame queue so big that you run out of memory.
-                if (req->IsDone() && !req->HasError() && maxFramesAllowedInQueue > 0) {
-                    while (capture->approximateFramesToRender() >= maxFramesAllowedInQueue) {
-                        std::this_thread::yield();
-                        std::this_thread::sleep_for(std::chrono::microseconds (uint32_t(1.0f / capture->getFpsRate() * 90)));
-                    }
-                }
-            }
-
-            if (req->HasError()) {
-                req->Dispose();
-                remove = true;
-            } else if (req->IsDone()) {
-                // log("Finished %d", i);
-                size_t length;
-                rgb24 *buffer;
-                req->GetRawData(buffer, length);
-
-                if (recordingSettings.movieModeRendering) {
-                    capture->queueFrame(buffer, std::nullopt);
-                } else {
-                    capture->queueFrame(buffer, UnityEngine::Time::get_time()); // todo: is this the right time method?
-                }
-
-                req->Dispose();
-                remove = true;
-            }
-        } else {
-            req->Dispose();
-            remove = true;
-        }
-        if (remove) {
+        if (HandleFrame(*it)) {
             it = requests.erase(it);
         } else {
             it++;
         }
     }
 
+}
+
+bool CameraCapture::HandleFrame(AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req) {
+    bool remove = false;
+
+    if (capture->isInitialized() && readOnlyTexture->m_CachedPtr.m_value != nullptr) {
+        req->Update();
+
+        if (recordingSettings.movieModeRendering) {
+            // TODO: Should we lock on waiting for the request to be done? Would that cause the OpenGL thread to freeze?
+            // This doesn't freeze OpenGL. Should this still be done though?
+            while (!(req->HasError() || req->IsDone())) {
+                req->Update();
+                std::this_thread::yield();
+                // wait for the next frame or so
+                SleepFrametime();
+            }
+
+
+            // This is to avoid having a frame queue so big that you run out of memory.
+            if (req->IsDone() && !req->HasError() && maxFramesAllowedInQueue > 0) {
+                while (capture->approximateFramesToRender() >= maxFramesAllowedInQueue) {
+                    std::this_thread::yield();
+                    SleepFrametime();
+                }
+            }
+        }
+
+        if (req->HasError()) {
+            req->Dispose();
+            remove = true;
+        } else if (req->IsDone()) {
+            // log("Finished %d", i);
+            size_t length;
+            rgb24 *buffer;
+            req->GetRawData(buffer, length);
+
+            if (recordingSettings.movieModeRendering) {
+                capture->queueFrame(buffer, std::nullopt);
+            } else {
+                capture->queueFrame(buffer, UnityEngine::Time::get_time()); // todo: is this the right time method?
+            }
+
+            req->Dispose();
+            remove = true;
+        }
+    } else {
+        req->Dispose();
+        remove = true;
+    }
+
+    return remove;
 }
 
 int CameraCapture::remainingReadRequests() {
@@ -245,8 +249,28 @@ int CameraCapture::remainingFramesToRender() {
     return capture->approximateFramesToRender();
 }
 
+void CameraCapture::SleepFrametime() {
+    // * 90 because 90%
+    std::this_thread::sleep_for(std::chrono::microseconds (uint32_t(1.0f / capture->getFpsRate() * 90)));
+}
+
 void CameraCapture::dtor() {
     HLogger.fmtLog<Paper::LogLevel::INF>("Camera Capture is being destroyed, finishing the capture");
+
+    if (waitForPendingFrames) {
+        while (requests.empty()) {
+            auto it = requests.begin();
+            while (it != requests.end()) {
+                if (HandleFrame(*it)) {
+                    it = requests.erase(it);
+                } else {
+                    it++;
+                }
+            }
+            SleepFrametime();
+        }
+    }
+
     for (auto& req : requests) {
         req->Dispose();
     }

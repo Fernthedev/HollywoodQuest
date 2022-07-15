@@ -43,9 +43,19 @@ public:
         return recordingSettings;
     }
 
+    /// Max frames allowed in the render queue
     uint32_t maxFramesAllowedInQueue = 10;
 
+    /// If true, it is allowed to make requests to render frames
+    /// If false, it will not make requests but will continue processing remaining requests
+    DECLARE_INSTANCE_FIELD_DEFAULT(bool, makeRequests, true);
+
+    /// If true, will process remaining frames in destructor
+    DECLARE_INSTANCE_FIELD_DEFAULT(bool, waitForPendingFrames, false);
+
+    /// Returns amount of requests remaining to be processed
     DECLARE_INSTANCE_METHOD(int, remainingReadRequests);
+    /// Returns amount of frames remaining to be rendered
     DECLARE_INSTANCE_METHOD(int, remainingFramesToRender);
 
 private:
@@ -59,7 +69,10 @@ private:
     DECLARE_CTOR(ctor);
     DECLARE_DTOR(dtor);
 
+    DECLARE_INSTANCE_METHOD(void, SleepFrametime);
+
     DECLARE_INSTANCE_METHOD(void, Update);
+    DECLARE_INSTANCE_METHOD(bool, HandleFrame, AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req);
 
     DECLARE_INSTANCE_METHOD(void, RequestFrame);
 
