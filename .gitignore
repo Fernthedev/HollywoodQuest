@@ -60,3 +60,4 @@ ffmpeg/
 extern.cmake
 qpm_defines.cmake
 build/
+mod.json
