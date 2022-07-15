@@ -1,7 +1,7 @@
 #pragma once
  
 #include "AsyncGPUReadbackPluginRequest.hpp"
-#include "render/AbstractEncoder.hpp"
+#include "shared/render/AbstractEncoder.hpp"
 
 #include <string>
 #include <deque>

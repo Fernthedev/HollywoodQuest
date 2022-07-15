@@ -1,3 +1,4 @@
+#include "main.hpp"
 #include "CustomTypes/AudioCapture.hpp"
 
 #include "UnityEngine/AudioSettings.hpp"

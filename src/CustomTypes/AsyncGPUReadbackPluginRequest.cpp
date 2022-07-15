@@ -12,6 +12,7 @@
 #include "CustomTypes/TypeHelpers.hpp"
 
 #include "UnityEngine/GL.hpp"
+#include "shaders.hpp"
 
 // Looks like this was from https://github.com/Alabate/AsyncGPUReadbackPlugin
 
@@ -167,8 +168,8 @@ extern "C" void makeRequest_renderThread(int event_id) {
 
     IL2CPP_CATCH_HANDLER(
 	// Enable sRGB shader
-	static Shader sRGBShader = Shader::shaderRGBGammaConvert();
-	static Shader yuvShader = Shader::shaderYUVGammaConvert();
+	static Shader sRGBShader = shaderRGBGammaConvert();
+	static Shader yuvShader = shaderYUVGammaConvert();
 
 	switch (task->colorConvert) {
 	    default:
