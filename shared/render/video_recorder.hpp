@@ -100,6 +100,7 @@ private:
     AVCodecContext *c = NULL;
     SwsContext *swsCtx = nullptr;
     AVFrame *frame;
+    AVPacket *pkt;
     AVFormatContext *ofctx = nullptr;
     AVOutputFormat *oformat = nullptr;
 
@@ -116,19 +117,14 @@ private:
     std::ofstream f;
 
     using QueueContent = std::pair<rgb24*, std::optional<int64_t>>;
-    moodycamel::ConcurrentQueue<QueueContent> framebuffers;
+    moodycamel::ReaderWriterQueue<QueueContent> framebuffers;
 
 //    std::list<rgb24*> framebuffers;
     std::thread encodingThread;
-    std::vector<std::thread> queueThreads;
     rgb24* emptyFrame; // constant used to set the frame data to null
 
-    std::atomic_uint64_t remainingFramesCount;
-
-    void SendFrame(AVCodecContext *enc_ctx, AVFrame *frame);
-    void Encode(AVCodecContext *enc_ctx, AVPacket *pkt, std::ofstream &outfile);
+    void Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream& outfile);
 
     void AddFrame(rgb24 *data, std::optional<int64_t> frameTime);
-    void enqueueFramesThreadLoop();
     void encodeFramesThreadLoop();
 };
