@@ -62,7 +62,7 @@ VideoCapture::VideoCapture(uint32_t width, uint32_t height, uint32_t fpsRate,
           encoderStr(encoderStr),
           filename(filepath),
           pxlFormat(pxlFormat) {
-    HLogger.fmtLog<Paper::LogLevel::INF>("Setting up video at path %s", this->filename.c_str());
+    HLogger.fmtLog<Paper::LogLevel::INF>("Setting up video at path {}", this->filename.c_str());
 }
 
 void VideoCapture::Init() {
@@ -86,10 +86,10 @@ void VideoCapture::Init() {
     }
 
     for (auto& s : GetCodecs()) {
-        HLogger.fmtLog<Paper::LogLevel::INF>("codec: %s", s.c_str());
+        HLogger.fmtLog<Paper::LogLevel::INF>("codec: {}", s.c_str());
     }
 
-    HLogger.fmtLog<Paper::LogLevel::INF>("Attempting to use %s", std::string(encoderStr).c_str());
+    HLogger.fmtLog<Paper::LogLevel::INF>("Attempting to use {}", std::string(encoderStr).c_str());
     codec = avcodec_find_encoder_by_name(std::string(encoderStr).c_str());
 
     // codec = avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -129,7 +129,7 @@ void VideoCapture::Init() {
     ret = avcodec_open2(c, codec, NULL);
     if (ret < 0)
     {
-        HLogger.fmtLog<Paper::LogLevel::INF>("Could not open codec: %s\n", av_err2str(ret));
+        HLogger.fmtLog<Paper::LogLevel::INF>("Could not open codec: {}\n", av_err2str(ret));
         return;
     }
 
@@ -138,7 +138,7 @@ void VideoCapture::Init() {
     f = std::ofstream(filename);
     if (!f)
     {
-        HLogger.fmtLog<Paper::LogLevel::INF>("Could not open %s\n", filename.c_str());
+        HLogger.fmtLog<Paper::LogLevel::INF>("Could not open {}\n", filename.c_str());
         return;
     }
 
@@ -162,7 +162,7 @@ void VideoCapture::Init() {
     // swsCtx = sws_getContext(c->width, c->height, AV_PIX_FMT_RGB24, c->width, c->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, 0, 0, 0);
 
     initialized = true;
-    HLogger.fmtLog<Paper::LogLevel::INF>("Finished initializing video at path %s", filename.c_str());
+    HLogger.fmtLog<Paper::LogLevel::INF>("Finished initializing video at path {}", filename.c_str());
 
     encodingThread = std::thread(&VideoCapture::encodeFramesThreadLoop, this);
 
@@ -247,7 +247,7 @@ void VideoCapture::AddFrame(rgb24 *data) {
         // TODO: Use system time
         static auto get_time = il2cpp_utils::il2cpp_type_check::FPtrWrapper<&UnityEngine::Time::get_time>::get();
         startTime = get_time();
-        HLogger.fmtLog<Paper::LogLevel::INF>("Video global time start is %f", startTime);
+        HLogger.fmtLog<Paper::LogLevel::INF>("Video global time start is {}", startTime);
     }
 
     int framesToWrite = 1;
@@ -267,7 +267,7 @@ void VideoCapture::AddFrame(rgb24 *data) {
     ret = av_frame_make_writable(frame);
     if (ret < 0)
     {
-        HLogger.fmtLog<Paper::LogLevel::INF>("Could not make the frame writable: %s", av_err2str(ret));
+        HLogger.fmtLog<Paper::LogLevel::INF>("Could not make the frame writable: {}", av_err2str(ret));
         return;
     }
 
