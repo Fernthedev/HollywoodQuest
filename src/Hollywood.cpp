@@ -17,7 +17,9 @@
 #include "CustomTypes/AudioCapture.hpp"
 #include "UnityEngine/Rect.hpp"
 
+extern "C" {
 #include "libavcodec/jni.h"
+}
 
 void Hollywood::initialize() {
     static bool init;
@@ -25,8 +27,8 @@ void Hollywood::initialize() {
     init = true;
 
     HLogger.fmtLog<Paper::LogLevel::DBG>("Initializing Hollywood");
-    il2cpp_functions::Init();
-    custom_types::Register::AutoRegister();
+    // il2cpp_functions::Init();
+    // custom_types::Register::AutoRegister();
 
     // For MediaCodec Android, though it does not support encoding. We can do this anyways
     auto jni = Modloader::getJni();
