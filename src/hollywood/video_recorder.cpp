@@ -269,6 +269,9 @@ void VideoCapture::AddFrame(rgb24 *data, std::optional<int64_t> frameTime) {
     } else {
         frame->pts = frameTime.value_or((int) ((1.0f / (float) fpsRate) * (float) frameCounter));
     }
+    // transform to YUV?
+//    https://stackoverflow.com/questions/21938674/ffmpeg-rgb-to-yuv-conversion-loses-color-and-scale
+
     /* encode the image */
     Encode(c, frame, pkt, f);
 

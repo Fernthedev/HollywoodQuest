@@ -17,6 +17,7 @@ void main()
     vec3 rgb = texture(cameraTexture, texCoords).rgb;
     rgb = pow(rgb, vec3(gamma));
 
+    // https://www.hardmo.de/article/2018-10-21-rgb-yuv420-glsl.md
 
     mat4 RGBtoYUV = mat4(
         0.257,  0.439, -0.148, 0.0,
