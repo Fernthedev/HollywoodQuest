@@ -34,6 +34,7 @@ std::optional<std::chrono::time_point<std::chrono::steady_clock>> lastRecordedTi
 
 void CameraCapture::ctor()
 {
+    INVOKE_CTOR();
     requests = RequestList();
     HLogger.fmtLog<Paper::LogLevel::INF>("Making video capture");
 }
