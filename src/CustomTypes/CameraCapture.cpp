@@ -46,6 +46,7 @@ void CameraCapture::Init(CameraRecordingSettings const &settings) {
     //    capture = std::make_unique<Hollywood::Rav1eVideoEncoder>(texture->get_width(), texture->get_height(), 60, "/sdcard/video.h264", 30000); //rav1e
     capture->Init();
     this->recordingSettings = settings;
+    startTime = std::chrono::high_resolution_clock::now();
 
     // StartCoroutine(reinterpret_cast<enumeratorT*>(CoroutineHelper::New(RequestPixelsAtEndOfFrame())));
 //    UnityEngine::MonoBehaviour::InvokeRepeating(newcsstr("RequestFrame"), 1.0f, 1.0f/capture->getFpsrate());
@@ -53,6 +54,13 @@ void CameraCapture::Init(CameraRecordingSettings const &settings) {
 
 void CameraCapture::RequestFrame() {
     frameRequestCount++;
+}
+
+uint64_t CameraCapture::getCurrentFrameId() const {
+    // time = 600 ms
+    // 60 FPS = 1 / 60 = 16ms
+    // frame  = 600 / 16 = 37
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime) / std::chrono::milliseconds((uint64_t) std::round(1.0 / capture->getFpsRate() * 1000));
 }
 
 inline UnityEngine::RenderTexture* GetTemporaryRenderTexture(Hollywood::AbstractVideoEncoder* capture, int format)
@@ -143,7 +151,7 @@ void CameraCapture::OnPostRender() {
 
         if (capture->isInitialized() && readOnlyTexture && readOnlyTexture->m_CachedPtr.m_value != nullptr) {
             if (capture->approximateFramesToRender() < maxFramesAllowedInQueue && requests.size() <= 10) {
-                requests.push_back(AsyncGPUReadbackPlugin::Request(readOnlyTexture));
+                MakeRequest(readOnlyTexture);
             } else {
                  HLogger.fmtLog<Paper::LogLevel::WRN>("Too many requests currently, not adding more");
             }
@@ -163,6 +171,11 @@ void CameraCapture::OnPostRender() {
     }
 }
 
+void CameraCapture::MakeRequest(UnityEngine::RenderTexture * target) {
+    auto request = AsyncGPUReadbackPlugin::Request(target);
+    request->frameId = getCurrentFrameId();
+    requests.push_back(request);
+}
 
 // https://github.com/Alabate/AsyncGPUReadbackPlugin/blob/e8d5e52a9adba24bc0f652c39076404e4671e367/UnityExampleProject/Assets/Scripts/UsePlugin.cs#L13
 void CameraCapture::Update() {
@@ -174,7 +187,7 @@ void CameraCapture::Update() {
         // Add requests over time?
         auto newTexture = GetProperTexture();
 
-        requests.push_back(AsyncGPUReadbackPlugin::Request(newTexture));
+        MakeRequest(newTexture);
     }
 
     // log("Request count %i", count);
@@ -228,7 +241,7 @@ bool CameraCapture::HandleFrame(AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRe
             if (recordingSettings.movieModeRendering) {
                 capture->queueFrame(buffer, std::nullopt);
             } else {
-                capture->queueFrame(buffer, UnityEngine::Time::get_time()); // todo: is this the right time method?
+                capture->queueFrame(buffer, req->frameId); // todo: is this the right time method?
             }
 
             req->Dispose();

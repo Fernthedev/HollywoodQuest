@@ -148,9 +148,10 @@ void VideoCapture::Init() {
     initialized = true;
     HLogger.fmtLog<Paper::LogLevel::INF>("Finished initializing video at path {}", filename.c_str());
 
-    encodingThread = std::thread(&VideoCapture::encodeFramesThreadLoop, this);
 
     emptyFrame = new rgb24[width * height];
+
+    encodingThread = std::thread(&VideoCapture::encodeFramesThreadLoop, this);
 }
 
 #pragma endregion
@@ -161,7 +162,7 @@ void VideoCapture::encodeFramesThreadLoop() {
     HLogger.fmtLog<Paper::LogLevel::INF>("Starting encoding thread");
 
     while (initialized) {
-        QueueContent frameData = nullptr;
+        QueueContent frameData = {};
 
         // Block instead?
         if (!framebuffers.try_dequeue(frameData)) {
@@ -172,36 +173,30 @@ void VideoCapture::encodeFramesThreadLoop() {
         }
 
         auto startTime = std::chrono::high_resolution_clock::now();
-        this->AddFrame(frameData);
+        this->AddFrame(frameData.first, frameData.second);
         auto currentTime = std::chrono::high_resolution_clock::now();
         int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
 
         // HLogger.fmtLog<Paper::LogLevel::INF>("Took %lldms to add and encode frame", (long long) duration);
 
-        free(frameData);
+        free(frameData.first);
     }
     HLogger.fmtLog<Paper::LogLevel::INF>("Ending encoding thread");
 }
 
-
-
-
-void VideoCapture::Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream& outfile, int framesToWrite = 1) {
-    int ret;
-
+void VideoCapture::Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream& outfile) {
     /* send the frame to the encoder */
     // if (frame)
     // {
-        // HLogger.fmtLog<Paper::LogLevel::INF>("Send frame %i at time %li", frameCounter, frame->pts);
+    // HLogger.fmtLog<Paper::LogLevel::INF>("Send frame %i at time %li", frameCounter, frame->pts);
     // }
 
-    ret = avcodec_send_frame(enc_ctx, frame);
+    int ret = avcodec_send_frame(enc_ctx, frame);
     if (ret < 0)
     {
         HLogger.fmtLog<Paper::LogLevel::INF>("Error sending a frame for encoding\n");
         return;
     }
-
     while (ret >= 0)
     {
         ret = avcodec_receive_packet(enc_ctx, pkt);
@@ -214,19 +209,13 @@ void VideoCapture::Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt
             HLogger.fmtLog<Paper::LogLevel::INF>("Error during encoding\n");
             return;
         }
-
-        // HLogger.fmtLog<Paper::LogLevel::INF>("Writing replay frames %d", pkt->size);
-
-        // HLogger.fmtLog<Paper::LogLevel::INF>("Write packet %li (size=%i)\n", pkt->pts, pkt->size);
-        for (int i = 0; i < framesToWrite; i++)
-        {
-            outfile.write(reinterpret_cast<const char *>(pkt->data), pkt->size);
-        }
+        outfile.write(reinterpret_cast<const char *>(pkt->data), pkt->size);
         av_packet_unref(pkt);
     }
 }
 
-void VideoCapture::AddFrame(rgb24 *data) {
+
+void VideoCapture::AddFrame(rgb24 *data, std::optional<float> frameTime) {
     if(!initialized) return;
 
     if(startTime == 0) {
@@ -264,10 +253,11 @@ void VideoCapture::AddFrame(rgb24 *data) {
     if (stabilizeFPS) {
         frame->pts = TotalLength();
     } else {
-        frame->pts = (int) ((1.0f / (float) fpsRate) * (float) frameCounter);
+        frame->pts = frameTime.value_or((int) ((1.0f / (float) fpsRate) * (float) frameCounter));
     }
     /* encode the image */
-    Encode(c, frame, pkt, f, framesToWrite);
+    Encode(c, frame, pkt, f);
+
 
 
     frame->data[0] = reinterpret_cast<uint8_t *>(emptyFrame);
@@ -284,7 +274,7 @@ void VideoCapture::queueFrame(rgb24* queuedFrame, std::optional<float> timeOfFra
     if(!initialized)
         throw std::runtime_error("Video capture is not initialized");
 
-    while(!framebuffers.enqueue(queuedFrame)) {
+    while(!framebuffers.enqueue({queuedFrame, timeOfFrame})) {
         std::this_thread::yield();
         std::this_thread::sleep_for(std::chrono::microseconds (60));
     }
@@ -299,8 +289,15 @@ void VideoCapture::Finish()
         HLogger.fmtLog<Paper::LogLevel::INF>("Attempted to finish video capture when capture wasn't initialized, returning");
         return;
     }
+
     //DELAYED FRAMES
     Encode(c, NULL, pkt, f);
+
+    uint8_t endcode[] = { 0, 0, 1, 0xb7 };
+
+    if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
+        f.write(reinterpret_cast<char const *>(endcode), sizeof(endcode));
+
 
     f.close();
 
@@ -316,6 +313,7 @@ VideoCapture::~VideoCapture()
 {
     if(initialized) Finish();
 
+
     if (encodingThread.joinable())
         encodingThread.join();
 
@@ -325,7 +323,7 @@ VideoCapture::~VideoCapture()
 
     QueueContent frame;
     while (framebuffers.try_dequeue(frame)) {
-        free(frame);
+        free(frame.first);
     }
 }
 

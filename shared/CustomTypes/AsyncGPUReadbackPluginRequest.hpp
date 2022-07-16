@@ -39,6 +39,7 @@ DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2
     DECLARE_INSTANCE_METHOD(void, Dispose);
 
     public:
+        uint64_t frameId; // optional associated data
         void GetRawData(rgb24*& buffer, size_t& length) const;
         ~AsyncGPUReadbackPluginRequest();
 )

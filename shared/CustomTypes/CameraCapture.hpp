@@ -63,6 +63,9 @@ public:
 private:
     std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
     int frameRequestCount = 0;
+    std::chrono::steady_clock::time_point startTime;
+
+    uint64_t getCurrentFrameId() const;
 
     CameraRecordingSettings recordingSettings;
 
@@ -70,6 +73,8 @@ private:
  
     DECLARE_CTOR(ctor);
     DECLARE_DTOR(dtor);
+
+    DECLARE_INSTANCE_METHOD(void, MakeRequest, UnityEngine::RenderTexture* target);
 
     DECLARE_INSTANCE_METHOD(void, SleepFrametime);
 

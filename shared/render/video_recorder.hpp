@@ -61,7 +61,7 @@ public:
 
     void Init() override;
 
-
+    uint32_t threadPoolCount = 2;
 
     void queueFrame(rgb24* queuedFrame, std::optional<float> timeOfFrame) override;
 
@@ -116,15 +116,15 @@ private:
     const AVPixelFormat pxlFormat;
     std::ofstream f;
 
-    using QueueContent = rgb24*;
+    using QueueContent = std::pair<rgb24*, std::optional<float>>;
     moodycamel::ReaderWriterQueue<QueueContent> framebuffers;
 
 //    std::list<rgb24*> framebuffers;
     std::thread encodingThread;
     rgb24* emptyFrame; // constant used to set the frame data to null
 
-    void Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream& outfile, int framesToWrite);
+    void Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream& outfile);
 
-    void AddFrame(rgb24 *data);
+    void AddFrame(rgb24 *data, std::optional<float> frameTime);
     void encodeFramesThreadLoop();
 };
