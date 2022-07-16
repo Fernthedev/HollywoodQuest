@@ -69,14 +69,6 @@ void VideoCapture::Init() {
     frameCounter = 0;
     int ret;
 
-    // todo: should this be done?
-    static bool jniEnabled = false;
-
-    if (!jniEnabled) {
-
-        jniEnabled = true;
-    }
-
     for (auto& s : GetCodecs()) {
         HLogger.fmtLog<Paper::LogLevel::INF>("codec: {}", s.c_str());
     }
@@ -173,7 +165,9 @@ void VideoCapture::encodeFramesThreadLoop() {
 
         // Block instead?
         if (!framebuffers.try_dequeue(frameData)) {
+            f.flush();
             std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::microseconds (100));
             continue;
         }
 
@@ -292,6 +286,7 @@ void VideoCapture::queueFrame(rgb24* queuedFrame, std::optional<float> timeOfFra
 
     while(!framebuffers.enqueue(queuedFrame)) {
         std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::microseconds (60));
     }
 //    HLogger.fmtLog<Paper::LogLevel::INF>("Frame queue: %zu", flippedframebuffers.size_approx());
 }
