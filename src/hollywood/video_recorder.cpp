@@ -90,10 +90,6 @@ void VideoCapture::Init() {
         return;
     }
 
-    pkt = av_packet_alloc();
-    if (!pkt)
-        return;
-
     c->bit_rate = bitrate * 1000;
     c->width = width;
     c->height = height;
@@ -152,20 +148,25 @@ void VideoCapture::Init() {
     emptyFrame = new rgb24[width * height];
 
     encodingThread = std::thread(&VideoCapture::encodeFramesThreadLoop, this);
+
+    for (int i = 0; i < threadPoolCount; i++)
+        queueThreads.emplace_back(std::thread(&VideoCapture::enqueueFramesThreadLoop, this));
 }
 
 #pragma endregion
 
 #pragma region encode
 
-void VideoCapture::encodeFramesThreadLoop() {
+void VideoCapture::enqueueFramesThreadLoop() {
     HLogger.fmtLog<Paper::LogLevel::INF>("Starting encoding thread");
+
+    moodycamel::ConsumerToken token(framebuffers);
 
     while (initialized) {
         QueueContent frameData = {};
 
         // Block instead?
-        if (!framebuffers.try_dequeue(frameData)) {
+        if (!framebuffers.try_dequeue(token, frameData)) {
             f.flush();
             std::this_thread::yield();
             std::this_thread::sleep_for(std::chrono::microseconds (100));
@@ -184,19 +185,42 @@ void VideoCapture::encodeFramesThreadLoop() {
     HLogger.fmtLog<Paper::LogLevel::INF>("Ending encoding thread");
 }
 
-void VideoCapture::Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream& outfile) {
-    /* send the frame to the encoder */
-    // if (frame)
-    // {
-    // HLogger.fmtLog<Paper::LogLevel::INF>("Send frame %i at time %li", frameCounter, frame->pts);
-    // }
-
-    int ret = avcodec_send_frame(enc_ctx, frame);
-    if (ret < 0)
-    {
-        HLogger.fmtLog<Paper::LogLevel::INF>("Error sending a frame for encoding\n");
+void VideoCapture::encodeFramesThreadLoop() {
+    auto pkt = av_packet_alloc();
+    if (!pkt) {
+        HLogger.fmtLog<Paper::LogLevel::ERR>("UNABLE TO ALLOCATE PACKET IN ENCODE THREAD");
         return;
     }
+
+    while (initialized || remainingFramesCount > 0) {
+        if (remainingFramesCount == 0) {
+            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::microseconds (100));
+        }
+
+        Encode(c, pkt, f);
+    }
+
+    // cleanup
+    //DELAYED FRAMES
+    SendFrame(c, NULL);
+    Encode(c, pkt, f);
+
+    uint8_t endcode[] = { 0, 0, 1, 0xb7 };
+
+    if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
+        f.write(reinterpret_cast<char const *>(endcode), sizeof(endcode));
+
+
+    f.close();
+
+    avcodec_free_context(&c);
+    av_frame_free(&frame);
+    av_packet_free(&pkt);
+}
+
+void VideoCapture::Encode(AVCodecContext *enc_ctx, AVPacket *pkt, std::ofstream &outfile) {
+    int ret = 0;
     while (ret >= 0)
     {
         ret = avcodec_receive_packet(enc_ctx, pkt);
@@ -210,10 +234,21 @@ void VideoCapture::Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt
             return;
         }
         outfile.write(reinterpret_cast<const char *>(pkt->data), pkt->size);
+
+        remainingFramesCount--;
         av_packet_unref(pkt);
     }
 }
 
+void VideoCapture::SendFrame(AVCodecContext *enc_ctx, AVFrame *frame) {
+    int ret = avcodec_send_frame(enc_ctx, frame);
+    if (ret < 0)
+    {
+        HLogger.fmtLog<Paper::LogLevel::INF>("Error sending a frame for encoding\n");
+        return;
+    }
+    remainingFramesCount++;
+}
 
 void VideoCapture::AddFrame(rgb24 *data, std::optional<int64_t> frameTime) {
     if(!initialized) return;
@@ -256,8 +291,7 @@ void VideoCapture::AddFrame(rgb24 *data, std::optional<int64_t> frameTime) {
         frame->pts = frameTime.value_or((int) ((1.0f / (float) fpsRate) * (float) frameCounter));
     }
     /* encode the image */
-    Encode(c, frame, pkt, f);
-
+    SendFrame(c, frame);
 
 
     frame->data[0] = reinterpret_cast<uint8_t *>(emptyFrame);
@@ -290,20 +324,7 @@ void VideoCapture::Finish()
         return;
     }
 
-    //DELAYED FRAMES
-    Encode(c, NULL, pkt, f);
 
-    uint8_t endcode[] = { 0, 0, 1, 0xb7 };
-
-    if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
-        f.write(reinterpret_cast<char const *>(endcode), sizeof(endcode));
-
-
-    f.close();
-
-    avcodec_free_context(&c);
-    av_frame_free(&frame);
-    av_packet_free(&pkt);
     // sws_freeContext(swsCtx);
 
     initialized = false;
@@ -313,6 +334,9 @@ VideoCapture::~VideoCapture()
 {
     if(initialized) Finish();
 
+    for (auto& t : queueThreads)
+        if (t.joinable())
+            t.join();
 
     if (encodingThread.joinable())
         encodingThread.join();
