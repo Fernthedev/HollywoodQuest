@@ -99,17 +99,18 @@ void Rav1eVideoEncoder::Init() {
     encodingThread = std::thread(&Rav1eVideoEncoder::EncodeLoop, this);
 }
 
-void Rav1eVideoEncoder::queueFrame(rgb24 *data, std::optional<float> timeOfFrame) {
+void Rav1eVideoEncoder::queueFrame(rgb24 *data, std::optional<uint64_t> timeOfFrame) {
     if(!initialized)
         throw std::runtime_error("Video capture is not initialized");
 
     while(!framebuffers.enqueue(data)) {
         std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 }
 
 size_t Rav1eVideoEncoder::approximateFramesToRender() {
-    return 0;
+    return framebuffers.size_approx();
 }
 
 void Rav1eVideoEncoder::Encode(rgb24* data) {
@@ -151,7 +152,7 @@ void Rav1eVideoEncoder::Encode(rgb24* data) {
     CheckError();
     HLogger.fmtLog<Paper::LogLevel::INF>("Frame filled {}", len * 3);
 
-    HandleError(rav1e_send_frame(context, frame));
+    HandleError(ret = rav1e_send_frame(context, frame));
     HLogger.fmtLog<Paper::LogLevel::INF>("Frame sent");
 
     } catch (std::exception &e) {
@@ -220,6 +221,7 @@ void Rav1eVideoEncoder::EncodeLoop() {
         // Block instead?
         if (!framebuffers.try_dequeue(frameData)) {
             std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
             continue;
         }
 
@@ -261,7 +263,7 @@ void Rav1eVideoEncoder::Finish()
     rav1e_send_frame(context, nullptr);
 
     // Wait until encoding finishes
-    if (encodingThread.joinable())
+    if (std::this_thread::get_id() != encodingThread.get_id() && encodingThread.joinable())
         encodingThread.join();
 
     rav1e_frame_unref(frame);

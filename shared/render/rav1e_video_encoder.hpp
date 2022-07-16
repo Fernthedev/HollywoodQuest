@@ -13,7 +13,7 @@ namespace Hollywood {
         Rav1eVideoEncoder(uint32_t width, uint32_t height, uint32_t fpsRate,
                           std::string filename, uint32_t bitrate);
 
-        void queueFrame(rgb24 *data, std::optional<float> timeOfFrame) override;
+        void queueFrame(rgb24 *data, std::optional<uint64_t> timeOfFrame) override;
 
         void Init() override;
 
