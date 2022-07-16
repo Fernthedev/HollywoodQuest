@@ -1,7 +1,7 @@
 #pragma once
 
 #include "AbstractEncoder.hpp"
-#include "queue/readerwriterqueue.h"
+#include "../queue/readerwriterqueue.h"
 
 #include "rav1e/rav1e.h"
 

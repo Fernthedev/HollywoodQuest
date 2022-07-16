@@ -1,8 +1,8 @@
 #pragma once
 
 #include "main.hpp"
-#include "CustomTypes/AsyncGPUReadbackPluginRequest.hpp"
-#include "queue/readerwriterqueue.h"
+#include "../CustomTypes/AsyncGPUReadbackPluginRequest.hpp"
+#include "../queue/readerwriterqueue.h"
 #include "AbstractEncoder.hpp"
 #include "UnityEngine/Time.hpp"
 

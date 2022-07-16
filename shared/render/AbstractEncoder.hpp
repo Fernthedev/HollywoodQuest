@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CustomTypes/AsyncGPUReadbackPluginRequest.hpp"
+#include "../CustomTypes/AsyncGPUReadbackPluginRequest.hpp"
 
 namespace Hollywood {
 
