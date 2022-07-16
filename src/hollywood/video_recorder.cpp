@@ -73,15 +73,7 @@ void VideoCapture::Init() {
     static bool jniEnabled = false;
 
     if (!jniEnabled) {
-        // For MediaCodec Android, though it does not support encoding. We can do this anyways
-        auto jni = Modloader::getJni();
-        JavaVM *myVM;
-        jni->GetJavaVM(&myVM);
-        if (av_jni_set_java_vm(myVM, NULL) < 0) {
-            HLogger.fmtLog<Paper::LogLevel::INF>("Unable to enable JNI");
-        } else {
-            HLogger.fmtLog<Paper::LogLevel::INF>("Successfully enabled JNI");
-        }
+
         jniEnabled = true;
     }
 

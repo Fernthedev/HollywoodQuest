@@ -17,10 +17,26 @@
 #include "CustomTypes/AudioCapture.hpp"
 #include "UnityEngine/Rect.hpp"
 
+#include "libavcodec/jni.h"
+
 void Hollywood::initialize() {
+    static bool init;
+    if (init) return;
+    init = true;
+
     HLogger.fmtLog<Paper::LogLevel::DBG>("Initializing Hollywood");
     il2cpp_functions::Init();
     custom_types::Register::AutoRegister();
+
+    // For MediaCodec Android, though it does not support encoding. We can do this anyways
+    auto jni = Modloader::getJni();
+    JavaVM *myVM;
+    jni->GetJavaVM(&myVM);
+    if (av_jni_set_java_vm(myVM, NULL) < 0) {
+        HLogger.fmtLog<Paper::LogLevel::INF>("Unable to enable JNI");
+    } else {
+        HLogger.fmtLog<Paper::LogLevel::INF>("Successfully enabled JNI");
+    }
 }
 
 inline UnityEngine::Matrix4x4 MatrixTranslate(UnityEngine::Vector3 const& vector) {
