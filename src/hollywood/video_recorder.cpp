@@ -9,6 +9,7 @@ extern "C" {
 
 #include "UnityEngine/Time.hpp"
 
+// https://ffmpeg.org/doxygen/trunk/examples.html
 
 #pragma region FFMPEG_Debugging
 void* iterate_data = NULL;
@@ -97,14 +98,26 @@ void VideoCapture::Init() {
     c->framerate = (AVRational){(int) fpsRate, 1};
 
     c->gop_size = 10;
-    c->max_b_frames = 1;
+    c->max_b_frames = 2;
     c->pix_fmt = pxlFormat;
     // c->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if (codec->id == AV_CODEC_ID_H264) {
         av_opt_set(c->priv_data, "preset", encodeSpeed.c_str(), 0);
+        av_opt_set_int(c->priv_data, "crf", 18, 0);
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
     }
+
+    // https://stackoverflow.com/questions/55186822/whats-ffmpeg-doing-with-avcodec-send-packet
+    // set codec to automatically determine how many threads suits best for the decoding/encoding job
+    c->thread_count = 0;
+
+    if (codec->capabilities | AV_CODEC_CAP_FRAME_THREADS)
+        c->thread_type = FF_THREAD_FRAME;
+    else if (codec->capabilities | AV_CODEC_CAP_SLICE_THREADS)
+        c->thread_type = FF_THREAD_SLICE;
+    else
+        c->thread_count = 1; //don't use multithreading
 
     ret = avcodec_open2(c, codec, NULL);
     if (ret < 0)
@@ -226,6 +239,7 @@ void VideoCapture::Encode(AVCodecContext *enc_ctx, AVPacket *pkt, std::ofstream 
         ret = avcodec_receive_packet(enc_ctx, pkt);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
         {
+            outfile.flush();
             return;
         }
         else if (ret < 0)
