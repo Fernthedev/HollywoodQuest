@@ -40,7 +40,7 @@ void CameraCapture::ctor()
 }
 
 void CameraCapture::Init(CameraRecordingSettings const &settings) {
-    capture = std::make_unique<VideoCapture>(readOnlyTexture->get_width(), readOnlyTexture->get_height(), settings.fps, settings.fps, !settings.movieModeRendering, "faster", "/sdcard/video.h264");
+    capture = std::make_unique<VideoCapture>(readOnlyTexture->get_width(), readOnlyTexture->get_height(), settings.fps, settings.fps, !settings.movieModeRendering, settings.encodeSpeed, settings.filePath);
 
     // rav1e
     //    capture = std::make_unique<Hollywood::Rav1eVideoEncoder>(texture->get_width(), texture->get_height(), 60, "/sdcard/video.h264", 30000); //rav1e

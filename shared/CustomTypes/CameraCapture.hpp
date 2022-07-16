@@ -29,6 +29,8 @@ namespace Hollywood {
         int bitrate = 5000;
         bool movieModeRendering = true;
         float fov = 90;
+        std::string filePath = "/sdcard/video.h264";
+        std::string encodeSpeed = "faster";
     };
 }
 
