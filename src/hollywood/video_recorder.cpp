@@ -215,7 +215,7 @@ void VideoCapture::Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt
 }
 
 
-void VideoCapture::AddFrame(rgb24 *data, std::optional<float> frameTime) {
+void VideoCapture::AddFrame(rgb24 *data, std::optional<int64_t> frameTime) {
     if(!initialized) return;
 
     if(startTime == 0) {
@@ -270,7 +270,7 @@ void VideoCapture::AddFrame(rgb24 *data, std::optional<float> frameTime) {
 
 
 
-void VideoCapture::queueFrame(rgb24* queuedFrame, std::optional<float> timeOfFrame) {
+void VideoCapture::queueFrame(rgb24* queuedFrame, std::optional<uint64_t> timeOfFrame) {
     if(!initialized)
         throw std::runtime_error("Video capture is not initialized");
 

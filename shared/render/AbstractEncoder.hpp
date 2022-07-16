@@ -23,7 +23,7 @@ namespace Hollywood {
          * @param timeOfFrame Depending on the type of encoder and mode,
          * this will be used to place the frame in the correct keyframe
          */
-        virtual void queueFrame(rgb24* data, std::optional<float> timeOfFrame) = 0; // implement in encoder
+        virtual void queueFrame(rgb24* data, std::optional<uint64_t> timeOfFrame) = 0; // implement in encoder
         virtual void Init() = 0; // todo: Encapsulate to force initialized variable to true?
 
         [[nodiscard]] bool isInitialized() const { return initialized; }
