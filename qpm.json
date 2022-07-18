@@ -13,14 +13,14 @@
   "dependencies": [
     {
       "id": "codegen",
-      "versionRange": "^0.24.0",
+      "versionRange": "^0.25.0",
       "additionalData": {
         "private": true
       }
     },
     {
       "id": "custom-types",
-      "versionRange": "^0.15.0",
+      "versionRange": "^0.15.13",
       "additionalData": {}
     },
     {
@@ -35,7 +35,7 @@
     },
     {
       "id": "paper",
-      "versionRange": "^1.2.4",
+      "versionRange": "^1.2.7",
       "additionalData": {}
     }
   ],
