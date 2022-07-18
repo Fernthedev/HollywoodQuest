@@ -222,6 +222,9 @@ void VideoCapture::Encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt
         HLogger.fmtLog<Paper::LogLevel::INF>("Error sending a frame for encoding\n");
         return;
     }
+    if (frame)
+        pkt->pts = frame->pts;
+
     while (ret >= 0)
     {
         ret = avcodec_receive_packet(enc_ctx, pkt);
