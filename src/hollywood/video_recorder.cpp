@@ -108,7 +108,8 @@ void VideoCapture::Init() {
 
     if (codec->id == AV_CODEC_ID_H264) {
         av_opt_set(c->priv_data, "preset", encodeSpeed.c_str(), 0);
-        av_opt_set_int(c->priv_data, "crf", 18, 0);
+        // 18 is high quality
+        av_opt_set_int(c->priv_data, "crf", 25, 0);
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
     }
 
@@ -122,6 +123,17 @@ void VideoCapture::Init() {
         c->thread_type = FF_THREAD_SLICE;
     else
         c->thread_count = 1; //don't use multithreading
+
+    if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+        /* just for testing, we also add B-frames */
+        c->max_b_frames = 2;
+    }
+    if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
+        /* Needed to avoid using macroblocks in which some coeffs overflow.
+  * This does not happen with normal video, it just happens here as
+  * the motion of the chroma plane does not match the luma plane. */
+        c->mb_decision = 2;
+    }
 
     ret = avcodec_open2(c, codec, NULL);
     if (ret < 0)
@@ -267,7 +279,8 @@ void VideoCapture::AddFrame(rgb24 *data, std::optional<int64_t> frameTime) {
     if (stabilizeFPS) {
         frame->pts = TotalLength();
     } else {
-        frame->pts = frameTime.value_or((int) ((1.0f / (float) fpsRate) * (float) frameCounter));
+// if(frame != NULL) frame->pts = pts++; //we use frame == NULL to write delayed packets in destructor
+        frame->pts = pts++; //frameTime.value_or((int) ((1.0f / (float) fpsRate) * (float) frameCounter));
     }
     // transform to YUV?
 //    https://stackoverflow.com/questions/21938674/ffmpeg-rgb-to-yuv-conversion-loses-color-and-scale

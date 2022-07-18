@@ -77,7 +77,7 @@ Hollywood::CameraCapture * Hollywood::SetCameraCapture(UnityEngine::Camera *came
     // Set aspect ratio accordingly
     camera->set_aspect(float(recordingSettings.width) / float(recordingSettings.height));
 
-    auto set_pixelRect = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Rect &>(
+    static auto set_pixelRect = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Rect &>(
             "UnityEngine.Camera::set_pixelRect_Injected");
 
     auto pixelRect = UnityEngine::Rect(0, 0, (float) recordingSettings.width, (float) recordingSettings.height);
@@ -98,7 +98,7 @@ Hollywood::CameraCapture * Hollywood::SetCameraCapture(UnityEngine::Camera *came
     camera->set_aspect(float(recordingSettings.width) / float(recordingSettings.height));
 
 
-    auto set_cullingMatrix = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Matrix4x4>(
+    static auto set_cullingMatrix = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Matrix4x4>(
             "UnityEngine.Camera::set_cullingMatrix_Injected");
 
     set_cullingMatrix(camera, UnityEngine::Matrix4x4::Ortho(-99999, 99999, -99999, 99999, 0.001f, 99999) *

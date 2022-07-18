@@ -127,4 +127,6 @@ private:
 
     void AddFrame(rgb24 *data, std::optional<int64_t> frameTime);
     void encodeFramesThreadLoop();
+
+    int64_t pts = 0;
 };
