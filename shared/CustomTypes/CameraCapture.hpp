@@ -26,7 +26,7 @@ namespace Hollywood {
         int width = 1920;
         int height = 1080;
         int fps = 60;
-        int bitrate = 5000;
+        int bitrate = 8000;
         bool movieModeRendering = true;
         float fov = 90;
         std::string filePath = "/sdcard/video.h264";
