@@ -212,7 +212,7 @@ bool CameraCapture::HandleFrame(AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRe
         if (recordingSettings.movieModeRendering) {
             // TODO: Should we lock on waiting for the request to be done? Would that cause the OpenGL thread to freeze?
             // This doesn't freeze OpenGL. Should this still be done though?
-            while (!(req->HasError() || req->IsDone())) {
+            while (!(req->HasError() || req->IsDone()) && requests.size() >= maxRequestsAllowedInQueue) {
                 req->Update();
                 std::this_thread::yield();
                 // wait for the next frame or so

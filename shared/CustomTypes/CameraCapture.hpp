@@ -47,6 +47,7 @@ public:
 
     /// Max frames allowed in the render queue
     uint32_t maxFramesAllowedInQueue = 10;
+    uint32_t maxRequestsAllowedInQueue = 10;
 
     /// If true, it is allowed to make requests to render frames
     /// If false, it will not make requests but will continue processing remaining requests
