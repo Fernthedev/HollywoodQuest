@@ -98,12 +98,12 @@ Hollywood::CameraCapture * Hollywood::SetCameraCapture(UnityEngine::Camera *came
     camera->set_aspect(float(recordingSettings.width) / float(recordingSettings.height));
 
 
-    static auto set_cullingMatrix = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Matrix4x4>(
-            "UnityEngine.Camera::set_cullingMatrix_Injected");
-
-    set_cullingMatrix(camera, UnityEngine::Matrix4x4::Ortho(-99999, 99999, -99999, 99999, 0.001f, 99999) *
-                              MatrixTranslate(UnityEngine::Vector3::get_forward() * -99999 / 2) *
-                              camera->get_worldToCameraMatrix());
+//    static auto set_cullingMatrix = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Matrix4x4>(
+//            "UnityEngine.Camera::set_cullingMatrix_Injected");
+//
+//    set_cullingMatrix(camera, UnityEngine::Matrix4x4::Ortho(-99999, 99999, -99999, 99999, 0.001f, 99999) *
+//                              MatrixTranslate(UnityEngine::Vector3::get_forward() * -99999 / 2) *
+//                              camera->get_worldToCameraMatrix());
 
     return cameraCapture;
 }
