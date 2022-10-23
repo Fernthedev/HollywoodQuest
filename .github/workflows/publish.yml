@@ -66,6 +66,8 @@ jobs:
         if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         run: |
           cd ${GITHUB_WORKSPACE}
+          pip install PyGithub
+          pip install requests
           python3 ./update_ffmpeg.py
 
       - name: Build
