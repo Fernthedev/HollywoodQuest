@@ -60,12 +60,12 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ffmpeg
-          key: ${{ hashFiles('${{GITHUB_WORKSPACE}}/update_ffmpeg.py') }}
+          key: ${{ hashFiles('**/update_ffmpeg.py') }}
 
       - name: Get FFMPEG
         if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         run: |
-          cd ${GITHUB_WORKSPACE}}
+          cd ${GITHUB_WORKSPACE}
           python3 ./update_ffmpeg.py
 
       - name: Build
