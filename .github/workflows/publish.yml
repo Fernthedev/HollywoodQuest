@@ -78,7 +78,7 @@ jobs:
 
       - name: Create Qmod
         run: |
-          pwsh -Command ./createqmod.ps1 ${{env.qmodName}}
+          pwsh -Command ./buildQMOD.ps1 ${{env.qmodName}}
 
       # Get release that was created for this tag
       - name: Get Release
