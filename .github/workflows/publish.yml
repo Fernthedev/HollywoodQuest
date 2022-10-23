@@ -42,8 +42,16 @@ jobs:
           cache: true #will cache dependencies
 
           publish: true # Will publish the package at the end of the action run
-          publish_token: ${{secrets.GITHUB_TOKEN}}
+          publish_token: ${{secrets.QPM_TOKEN}} # Token required for authorization publish to qpackages.com
           version: "${{ steps.release_data.outputs.release }}" # defaults to qpm-rust version, do not include v
+
+          # set to true if applicable, ASSUMES the file is already a relaease asset
+          qpm_release_bin: true 
+          qpm_debug_bin: true
+
+          # Name of qmod in release asset. Assumes exists, same as prior
+          qpm_mod: ${{env.qmodName}}
+
 
       - name: List Post Restore
         run: |
