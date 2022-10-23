@@ -35,7 +35,7 @@ jobs:
           repository: ${{ github.repository }}
 
       - name: QPM Rust Action
-        uses: Fernthedev/qpm-rust-action@0.1
+        uses: Fernthedev/qpm-rust-action@1
         with:
           #required
           workflow_token: ${{secrets.GITHUB_TOKEN}}
@@ -65,7 +65,7 @@ jobs:
       - name: Get FFMPEG
         if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         run: |
-          cd ${{GITHUB_WORKSPACE}}
+          cd ${GITHUB_WORKSPACE}}
           python3 ./update_ffmpeg.py
 
       - name: Build
