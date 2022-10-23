@@ -1,6 +1,5 @@
 import os
 import shutil
-import zipfile
 
 shader_folder = "./shaders"
 

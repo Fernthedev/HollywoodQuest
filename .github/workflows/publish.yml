@@ -6,9 +6,7 @@ env:
   cache-name: hollywood_cache
 
 on:
-  push:
-    tags:
-      - "v*"
+  release
 
 jobs:
   publish:
@@ -43,7 +41,8 @@ jobs:
           restore: true # will run restore on download
           cache: true #will cache dependencies
 
-          publish: false # Will publish the package at the end of the action run
+          publish: true # Will publish the package at the end of the action run
+          publish_token: ${{secrets.GITHUB_TOKEN}}
           version: "${{ steps.release_data.outputs.release }}" # defaults to qpm-rust version, do not include v
 
       - name: List Post Restore
@@ -79,25 +78,6 @@ jobs:
       - name: Create Qmod
         run: |
           pwsh -Command ./buildQMOD.ps1 ${{env.qmodName}}
-
-      # Get release that was created for this tag
-      - name: Get Release
-        uses: octokit/request-action@v2.x
-        id: get_release
-        with:
-          route: GET /repos/:repository/releases/tags/${{ steps.get_tag_version.outputs.TAG }}
-          repository: ${{ github.repository }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get Release Upload URL
-        id: get_upload_url
-        run: |
-          url=$(echo "$response" | jq -r '.upload_url')
-          echo $url
-          echo "::set-output name=upload_url::$url"
-        env:
-          response: ${{ steps.get_release.outputs.data }}
 
       - name: Get Library Name
         id: libname
