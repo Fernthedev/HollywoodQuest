@@ -3,7 +3,7 @@
 
 # The story behind this
 This library has been in the works for many months with the help of many developers. A lot of effort has been put into making this stable and properly usable, but it is still not very friendly or generic yet. 
-It currently is very configurable or well documented, but it's a start.
+It currently is not very configurable or well documented, but it's a start.
 
 The idea behind this project came up when we jokingly said we would make a mod that would record videos better than ~~Oculus'~~ Meta's own recording software (which is horrible) which looks and sounds like a video recorded on a phone. (I guess that's what happens when you use a mobile chip)
 Throughout the many months of researching, development and testing we are finally able to show the horrifying code behind it all.
