@@ -82,8 +82,8 @@ jobs:
           cd ${GITHUB_WORKSPACE}
           pwsh -Command ./build.ps1
           qpm-rust qmod build
-# Rename so it reads as debug_
           mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
+# Rename so it reads as debug_
 
       - name: Create Qmod
         run: |
