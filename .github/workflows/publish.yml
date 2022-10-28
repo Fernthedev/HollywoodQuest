@@ -50,7 +50,7 @@ jobs:
           qpm_debug_bin: true
 
           # Name of qmod in release asset. Assumes exists, same as prior
-          qpm_mod: ${{env.qmodName}}
+          qpm_qmod: ${{env.qmodName}}
 
 
       - name: List Post Restore
@@ -82,6 +82,8 @@ jobs:
           cd ${GITHUB_WORKSPACE}
           pwsh -Command ./build.ps1
           qpm-rust qmod build
+# Rename so it reads as debug_
+          mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
 
       - name: Create Qmod
         run: |
@@ -102,7 +104,7 @@ jobs:
         with:
           files: |
             ./build/${{ steps.libname.outputs.NAME }}
-            ./build/debug/${{ steps.libname.outputs.NAME }}
+            ./build/debug/debug_${{ steps.libname.outputs.NAME }}
             ./${{env.qmodName}}.qmod
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
