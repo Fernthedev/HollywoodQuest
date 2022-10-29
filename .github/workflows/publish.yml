@@ -30,7 +30,6 @@ jobs:
           cat ${GITHUB_WORKSPACE}/ndkpath.txt
 
       - id: release_data
-        if: contains(matrix.cargo-arg, 'ndk')
         uses: pozetroninc/github-action-get-latest-release@master
         with:
           repository: ${{ github.repository }}
@@ -45,9 +44,7 @@ jobs:
         uses: Fernthedev/qpm-rust-action@main
         with:
           #required
-          workflow_token: ${{secrets.GITHUB_TOKEN}}
-
-          version: steps.get_tag_version.outputs.TAG
+          workflow_token: ${{secrets.GITHUB_TOKEN}
 
           restore: true # will run restore on download
           cache: true #will cache dependencies
