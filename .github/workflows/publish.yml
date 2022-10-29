@@ -34,12 +34,6 @@ jobs:
         with:
           repository: ${{ github.repository }}
 
-      - name: Get Tag Version
-        id: get_tag_version
-        run: |
-          echo ${GITHUB_REF#refs/tags/}
-          echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
-
       - name: QPM Rust Action
         uses: Fernthedev/qpm-rust-action@main
         with:
