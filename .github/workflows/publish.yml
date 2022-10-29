@@ -99,8 +99,9 @@ jobs:
           echo ::set-output name=NAME::"${files[0]}"
 
       - name: Rename debug
-        mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
-        # Rename so it reads as debug_
+        run: |
+          mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
+          # Rename so it reads as debug_
 
 
       - name: Upload to Release
