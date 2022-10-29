@@ -35,11 +35,19 @@ jobs:
         with:
           repository: ${{ github.repository }}
 
+      - name: Get Tag Version
+        id: get_tag_version
+        run: |
+          echo ${GITHUB_REF#refs/tags/}
+          echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
+
       - name: QPM Rust Action
         uses: Fernthedev/qpm-rust-action@main
         with:
           #required
           workflow_token: ${{secrets.GITHUB_TOKEN}}
+
+          version: steps.get_tag_version.outputs.TAG
 
           restore: true # will run restore on download
           cache: true #will cache dependencies
