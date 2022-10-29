@@ -48,9 +48,9 @@ jobs:
           publish_token: ${{secrets.QPM_TOKEN}} # Token required for authorization publish to qpackages.com
           version: "${{ steps.release_data.outputs.release }}" # defaults to qpm-rust version, do not include v
 
-          # set to true if applicable, ASSUMES the file is already a relaease asset
+          # set to true if applicable, ASSUMES the file is already a release asset
           qpm_release_bin: true 
-          qpm_debug_bin: true
+          qpm_debug_bin: false
 
           # Name of qmod in release asset. Assumes exists, same as prior
           qpm_qmod: ${{env.qmodName}}
@@ -85,8 +85,6 @@ jobs:
           cd ${GITHUB_WORKSPACE}
           pwsh -Command ./build.ps1
           qpm-rust qmod build
-          mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
-# Rename so it reads as debug_
 
       - name: Create Qmod
         run: |
@@ -99,6 +97,11 @@ jobs:
           pattern="lib${module_id}*.so"
           files=( $pattern )
           echo ::set-output name=NAME::"${files[0]}"
+
+      - name: Rename debug
+        mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
+        # Rename so it reads as debug_
+
 
       - name: Upload to Release
         id: upload_file_release
