@@ -44,7 +44,7 @@ jobs:
         uses: Fernthedev/qpm-rust-action@main
         with:
           #required
-          workflow_token: ${{secrets.GITHUB_TOKEN}
+          workflow_token: ${{secrets.GITHUB_TOKEN}}
 
           restore: true # will run restore on download
           cache: true #will cache dependencies
