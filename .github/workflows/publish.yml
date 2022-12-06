@@ -1,18 +1,18 @@
-name: Publish QPM Package
+name: Build
 
 env:
   module_id: hollywood
-  qmodName: hollywood
   cache-name: hollywood_cache
-  
+  qmodName: Hollywood
+
 on:
-  release:
-    types:
-      - created
-  workflow_dispatch:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,31 +29,33 @@ jobs:
           echo "$ANDROID_NDK_LATEST_HOME" > ${GITHUB_WORKSPACE}/ndkpath.txt
           cat ${GITHUB_WORKSPACE}/ndkpath.txt
 
-      - id: release_data
-        uses: pozetroninc/github-action-get-latest-release@master
+      - name: Check for release
+        uses: actions-ecosystem/action-regex-match@v2
+        id: commit-regex
+        if: github.event_name != 'pull_request'
         with:
-          repository: ${{ github.repository }}
+          text: ${{ github.event.head_commit.message }}
+          regex: ^release.*?((v?)((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)?)):?\W*(.*)
+          flags: i
 
       - name: QPM Rust Action
         uses: Fernthedev/qpm-rust-action@main
         with:
-          #required
-          workflow_token: ${{secrets.GITHUB_TOKEN}}
+          workflow_token: ${{ secrets.GITHUB_TOKEN }}
 
-          restore: true # will run restore on download
-          cache: true #will cache dependencies
+          restore: true
+          cache: true
 
-          publish: true # Will publish the package at the end of the action run
-          publish_token: ${{secrets.QPM_TOKEN}} # Token required for authorization publish to qpackages.com
-          version: "${{ steps.release_data.outputs.release }}" # defaults to qpm-rust version, do not include v
+          publish: ${{ github.event_name != 'pull_request' && steps.commit-regex.outputs.match != '' }} # Will publish the package at the end of the action run
+          publish_token: ${{ secrets.QPM_TOKEN }} # Token required for authorization publish to qpackages.com
+          version: "${{ steps.commit-regex.outputs.group3 }}" # defaults to qpm-rust version, do not include v
 
           # set to true if applicable, ASSUMES the file is already a release asset
-          qpm_release_bin: true 
+          qpm_release_bin: true
           qpm_debug_bin: false
 
           # Name of qmod in release asset. Assumes exists, same as prior
-          qpm_qmod: ${{env.qmodName}}.qmod
-
+          qpm_qmod: ${{ env.qmodName }}.qmod
 
       - name: List Post Restore
         run: |
@@ -83,11 +85,6 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}
           pwsh -Command ./build.ps1
-          qpm-rust qmod build
-
-      - name: Create Qmod
-        run: |
-          pwsh -Command ./buildQMOD.ps1 ${{env.qmodName}}
 
       - name: Get Library Name
         id: libname
@@ -97,20 +94,33 @@ jobs:
           files=( $pattern )
           echo ::set-output name=NAME::"${files[0]}"
 
+      - name: Upload non-debug artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.libname.outputs.NAME }}
+          path: ./build/${{ steps.libname.outputs.NAME }}
+          if-no-files-found: error
+
       - name: Rename debug
+        if: github.event_name != 'pull_request' && steps.commit-regex.outputs.match != ''
         run: |
           mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
-          # Rename so it reads as debug_
 
+      - name: Create qmod
+        if: github.event_name != 'pull_request' && steps.commit-regex.outputs.match != ''
+        run: |
+          pwsh -Command ./createqmod.ps1 ${{env.qmodName}}
 
       - name: Upload to Release
         id: upload_file_release
         uses: softprops/action-gh-release@v0.1.12
-        # Needed?      if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name != 'pull_request' && steps.commit-regex.outputs.match != ''
         with:
+          name: ${{ steps.commit-regex.outputs.group4 }}
+          tag_name: ${{ steps.commit-regex.outputs.group1 }}
           files: |
             ./build/${{ steps.libname.outputs.NAME }}
             ./build/debug/debug_${{ steps.libname.outputs.NAME }}
-            ./${{env.qmodName}}.qmod
+            ./${{ env.qmodName }}.qmod
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
