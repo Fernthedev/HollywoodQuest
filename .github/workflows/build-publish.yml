@@ -123,7 +123,7 @@ jobs:
           restore: false
 
           eager_publish: ${{ github.event_name != 'pull_request' && steps.commit-regex.outputs.match != '' }} # Will publish the package
-          publish_token: ${{ secrets.QPM_KEY }} # Token required for authorization publish to qpackages.com
+          publish_token: ${{ secrets.QPM_TOKEN }} # Token required for authorization publish to qpackages.com
           version: "${{ steps.commit-regex.outputs.group1 }}" # defaults to qpm-rust version, do not include v
 
           # set to true if applicable, ASSUMES the file is already a release asset
