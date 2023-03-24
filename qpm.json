@@ -13,7 +13,7 @@
   "dependencies": [
     {
       "id": "codegen",
-      "versionRange": "^0.32.0",
+      "versionRange": "^0.33.0",
       "additionalData": {
         "private": true
       }
