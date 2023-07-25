@@ -14,6 +14,8 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 cmake_minimum_required(VERSION 3.21)
 project(${COMPILE_ID})
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # c++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED 20)
@@ -43,6 +45,11 @@ add_library(
 )
 
 target_include_directories(${COMPILE_ID} PRIVATE .)
+
+# NDK Media
+target_link_libraries(${COMPILE_ID} PRIVATE
+mediandk
+)
 
 # FFMPEG
 target_include_directories(${COMPILE_ID} PRIVATE SYSTEM ffmpeg/)

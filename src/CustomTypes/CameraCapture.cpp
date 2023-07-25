@@ -4,6 +4,7 @@
 #ifdef USE_AV1
 #include "render/rav1e_video_encoder.hpp"
 #endif
+#include "render/mediacodec_encoder.hpp"
 
 #include "main.hpp"
 
@@ -32,15 +33,15 @@ DEFINE_TYPE(Hollywood, CameraCapture);
 
 std::optional<std::chrono::time_point<std::chrono::steady_clock>> lastRecordedTime;
 
-void CameraCapture::ctor()
-{
+void CameraCapture::ctor() {
     INVOKE_CTOR();
     requests = RequestList();
     HLogger.fmtLog<Paper::LogLevel::INF>("Making video capture");
 }
 
 void CameraCapture::Init(CameraRecordingSettings const &settings) {
-    capture = std::make_unique<VideoCapture>(readOnlyTexture->get_width(), readOnlyTexture->get_height(), settings.fps, settings.bitrate, !settings.movieModeRendering, settings.encodeSpeed, settings.filePath);
+    // capture = std::make_unique<VideoCapture>(readOnlyTexture->get_width(), readOnlyTexture->get_height(), settings.fps, settings.bitrate, !settings.movieModeRendering, settings.encodeSpeed, settings.filePath);
+    capture = std::make_unique<MediaCodecEncoder>(readOnlyTexture->get_width(), readOnlyTexture->get_height(), settings.fps, settings.bitrate, settings.filePath);
 
     // rav1e
     //    capture = std::make_unique<Hollywood::Rav1eVideoEncoder>(texture->get_width(), texture->get_height(), 60, "/sdcard/video.h264", 30000); //rav1e
@@ -63,6 +64,8 @@ uint64_t CameraCapture::getCurrentFrameId() const {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime) / std::chrono::milliseconds((uint64_t) std::round(1.0 / capture->getFpsRate() * 1000));
 }
 
+#pragma region deprecated
+
 inline UnityEngine::RenderTexture* GetTemporaryRenderTexture(Hollywood::AbstractVideoEncoder* capture, int format)
 {
     UnityEngine::RenderTexture* rt = RenderTexture::GetTemporary(capture->getWidth(), capture->getHeight(), 0, (RenderTextureFormat) format, RenderTextureReadWrite::Default);
@@ -72,7 +75,6 @@ inline UnityEngine::RenderTexture* GetTemporaryRenderTexture(Hollywood::Abstract
     return rt;
 }
 
-#pragma region deprecated
 // TODO: Remove?
 void CameraCapture::OnRenderImage(UnityEngine::RenderTexture *source, UnityEngine::RenderTexture *destination) {
     bool render = false;
@@ -268,7 +270,8 @@ void CameraCapture::SleepFrametime() {
     std::this_thread::sleep_for(std::chrono::microseconds (uint32_t(1.0f / capture->getFpsRate() * 90)));
 }
 
-void CameraCapture::dtor() {
+// void CameraCapture::dtor() {
+void CameraCapture::OnDestroy() {
     HLogger.fmtLog<Paper::LogLevel::INF>("Camera Capture is being destroyed, finishing the capture");
 
     if (waitForPendingFrames) {
@@ -293,7 +296,7 @@ void CameraCapture::dtor() {
     CancelInvoke();
 
 
-    this->~CameraCapture();
+    // this->~CameraCapture();
 }
 
 

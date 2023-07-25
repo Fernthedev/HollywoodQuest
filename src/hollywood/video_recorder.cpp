@@ -14,7 +14,7 @@ extern "C" {
 #pragma region FFMPEG_Debugging
 void* iterate_data = NULL;
 
-const char* Encoder_GetNextCodecName(bool onlyEncoders = true)
+std::string Encoder_GetNextCodecName(bool onlyEncoders = false)
 {
     AVCodec* current_codec = const_cast<AVCodec *>(av_codec_iterate(&iterate_data));
     while (current_codec != NULL)
@@ -24,12 +24,16 @@ const char* Encoder_GetNextCodecName(bool onlyEncoders = true)
             current_codec = const_cast<AVCodec *>(av_codec_iterate(&iterate_data));
             continue;
         }
-        return current_codec->name;
+        auto accel = avcodec_get_hw_config(current_codec, 0);
+        if (!accel)
+            return string_format("%s (%s) no hw accel", current_codec->name, current_codec->long_name);
+        return string_format("%s (%s) hw accel: pix %d methods %d device %d", current_codec->name, current_codec->long_name,
+            accel->pix_fmt, accel->methods, accel->device_type);
     }
     return "";
 }
 
-const char* Encoder_GetFirstCodecName()
+std::string Encoder_GetFirstCodecName()
 {
     iterate_data = NULL;
     return Encoder_GetNextCodecName();
@@ -39,11 +43,11 @@ std::vector<std::string> GetCodecs()
 {
     std::vector<std::string> l;
 
-    auto s = std::string(Encoder_GetFirstCodecName());
+    auto s = Encoder_GetFirstCodecName();
     while (!s.empty())
     {
         l.push_back(s);
-        s = std::string(Encoder_GetNextCodecName());
+        s = Encoder_GetNextCodecName();
     }
 
     return l;

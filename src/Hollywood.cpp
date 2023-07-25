@@ -97,6 +97,7 @@ Hollywood::CameraCapture * Hollywood::SetCameraCapture(UnityEngine::Camera *came
     camera->set_targetTexture(texture);
     camera->set_aspect(float(recordingSettings.width) / float(recordingSettings.height));
 
+    // destroy texture with camera?
 
 //    static auto set_cullingMatrix = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Matrix4x4>(
 //            "UnityEngine.Camera::set_cullingMatrix_Injected");
