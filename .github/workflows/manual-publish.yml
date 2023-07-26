@@ -2,7 +2,6 @@ name: Publish
 
 env:
   module_id: hollywood
-  qmodName: Hollywood
 
 on:
   workflow_dispatch:
@@ -83,10 +82,6 @@ jobs:
         run: |
           mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
 
-      - name: Create qmod
-        run: |
-          pwsh -Command ./createqmod.ps1 ${{env.qmodName}}
-
       - name: Upload to Release
         id: upload_file_release
         uses: softprops/action-gh-release@v0.1.12
@@ -96,7 +91,6 @@ jobs:
           files: |
             ./build/${{ steps.libname.outputs.NAME }}
             ./build/debug/debug_${{ steps.libname.outputs.NAME }}
-            ./${{ env.qmodName }}.qmod
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -114,6 +108,3 @@ jobs:
           # set to true if applicable, ASSUMES the file is already a release asset
           qpm_release_bin: true
           qpm_debug_bin: false
-
-          # Name of qmod in release asset. Assumes exists, same as prior
-          qpm_qmod: ${{ env.qmodName }}.qmod

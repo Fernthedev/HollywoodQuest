@@ -1,16 +1,16 @@
 #pragma once
- 
+
 #include "AsyncGPUReadbackPluginRequest.hpp"
 #include "../render/AbstractEncoder.hpp"
 
 #include <string>
 #include <deque>
- 
+
 #include "UnityEngine/MonoBehaviour.hpp"
 #include "UnityEngine/RenderTexture.hpp"
- 
+
 #include "System/Collections/Generic/List_1.hpp"
- 
+
 #include "custom-types/shared/macros.hpp"
 #include "custom-types/shared/coroutine.hpp"
 #include "beatsaber-hook/shared/utils/gc-alloc.hpp"
@@ -19,18 +19,16 @@
 #include <memory>
 
 namespace Hollywood {
-    using RequestList = std::deque<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest *, gc_allocator<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest *>>;
+    using RequestList = std::deque<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*, gc_allocator<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*>>;
 
-// Default recommended settings
+    // Default recommended settings
     struct CameraRecordingSettings {
         int width = 1920;
         int height = 1080;
         int fps = 60;
         int bitrate = 8000;
-        bool movieModeRendering = true;
         float fov = 90;
-        std::string filePath = "/sdcard/video.h264";
-        std::string encodeSpeed = "faster";
+        std::string filePath = "/sdcard/video.mp4";
     };
 }
 
@@ -63,7 +61,6 @@ public:
 
 private:
     std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
-    int frameRequestCount = 0;
     std::chrono::steady_clock::time_point startTime;
 
     uint64_t getCurrentFrameId() const;
@@ -74,7 +71,7 @@ private:
 
     DECLARE_CTOR(ctor);
     DECLARE_SIMPLE_DTOR();
-    // DECLARE_DTOR(dtor);
+
     DECLARE_INSTANCE_METHOD(void, OnDestroy);
 
     DECLARE_INSTANCE_METHOD(void, MakeRequest, UnityEngine::RenderTexture* target);
@@ -83,17 +80,4 @@ private:
 
     DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(bool, HandleFrame, AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req);
-
-    DECLARE_INSTANCE_METHOD(void, RequestFrame);
-
-    DECLARE_INSTANCE_METHOD(void, OnPostRender);
-
-    // Return true if done
-    DECLARE_INSTANCE_METHOD(UnityEngine::RenderTexture *, GetProperTexture);
-//    void OnPostRender();
-
-    // We do this to avoid compile error
-    void OnRenderImage(UnityEngine::RenderTexture *source, UnityEngine::RenderTexture *destination);
-    // UNCOMMENT LATER
-//    DECLARE_INSTANCE_METHOD(void, OnRenderImage, UnityEngine::RenderTexture* source, UnityEngine::RenderTexture* destination);
 )

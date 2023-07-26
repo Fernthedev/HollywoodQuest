@@ -22,7 +22,7 @@ public:
 
     void Init() override;
 
-    void queueFrame(rgb24* queuedFrame, std::optional<uint64_t> timeOfFrame) override;
+    void queueFrame(rgb24* queuedFrame) override;
 
     void Finish();
 

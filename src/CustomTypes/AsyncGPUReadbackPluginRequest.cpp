@@ -33,7 +33,6 @@ struct Task {
 	int width;
 	int depth;
 	GLint internal_format;
-	ColorConvert colorConvert = ColorConvert::RGB; // TODO: Allow configuring
 };
 
 static std::unordered_map<int,std::shared_ptr<Task>> tasks;
@@ -55,27 +54,6 @@ extern "C" int makeRequest_mainThread(GLuint texture, GLuint texture2, int miple
 	lock.unlock();
 
 	return event_id;
-}
-
-
-static void create_ppm(int frame_id, unsigned int width, unsigned int height, unsigned int pixel_nbytes, GLubyte* pixels) {
-    //std::thread t([=]{
-       
-        size_t i, j, k, cur;
-        FILE *f = fopen(("/sdcard/img" + std::to_string(frame_id) + ".ppm").c_str(), "w");
-        fprintf(f, "P3\n%d %d\n%d\n", width, height, 255);
-        for (i = 0; i < height; i++) {
-            for (j = 0; j < width; j++) {
-                cur = pixel_nbytes * ((height - i - 1) * width + j);
-                fprintf(f, "%3d %3d %3d ", pixels[cur], pixels[cur + 1], pixels[cur + 2]);
-            }
-            fprintf(f, "\n");
-        }
-        fclose(f);
-        // loggingFunction().info("File %s", ("/sdcard/img" + std::to_string(frame_id) + ".ppm").c_str());
-        
-    //});
-    //t.detach();
 }
 
 // Code from xyonico, thank you very much!
@@ -110,10 +88,6 @@ extern "C" void makeRequest_renderThread(int event_id) {
 	std::shared_ptr<Task> task = tasks[event_id];
 	lock.unlock();
 
-
-
-
-
 	// Get texture informations
 	glBindTexture(GL_TEXTURE_2D, task->newTexture);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, task->miplevel, GL_TEXTURE_WIDTH, &(task->width));
@@ -122,17 +96,6 @@ extern "C" void makeRequest_renderThread(int event_id) {
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, task->miplevel, GL_TEXTURE_INTERNAL_FORMAT, &(task->internal_format));
 	auto pixelSize = getPixelSizeFromInternalFormat(task->internal_format);
 
-
-
-	// // Do blit magic
-	// GLuint vertexQuad;
-	// glGenVertexArrays(1, &vertexQuad);
-	// glBindVertexArray(vertexQuad);
-	// glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-	
-
-
 	// In our current state, this turns out to be 32 * 1920 * 1080 * 1 (66,355,200)
 	// However, we've been expecting this to be 1920 * 1080 * 3 (6,220,800)
 
@@ -140,7 +103,6 @@ extern "C" void makeRequest_renderThread(int event_id) {
 	task->size = calculateFrameSize(task->width, task->height);
 
 	// The format is GL_UNSIGNED_BYTE which is correct.
-	// log("Task size %d with pixel size %d and depth %d and format %d and byte format %d", task->size, task->depth, pixelSize, getFormatFromInternalFormat(task->internal_format), getTypeFromInternalFormat(task->internal_format));
 
     if (task->size == 0
         || getFormatFromInternalFormat(task->internal_format) == 0
@@ -169,19 +131,9 @@ extern "C" void makeRequest_renderThread(int event_id) {
     IL2CPP_CATCH_HANDLER(
 	// Enable sRGB shader
 	static Shader sRGBShader = shaderRGBGammaConvert();
-	static Shader yuvShader = shaderYUVGammaConvert();
 
-	switch (task->colorConvert) {
-	    default:
-            break;
-        case ColorConvert::RGB:
-            BlitShader(task->origTexture, sRGBShader);
-            break;
-        case ColorConvert::YUV:
-            BlitShader(task->origTexture, yuvShader);
-            break;
-    }
-    )
+	BlitShader(task->origTexture, sRGBShader);
+	)
 
 	// Create and bind pbo (pixel buffer object) to fbo
 	glGenBuffers(1, &(task->pbo));
@@ -193,21 +145,16 @@ extern "C" void makeRequest_renderThread(int event_id) {
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glReadPixels(0, 0, task->width, task->height, getFormatFromInternalFormat(task->internal_format), getTypeFromInternalFormat(task->internal_format), 0);
 
-	// if(event_id == 500) create_ppm(event_id, task->width, task->height, 3, reinterpret_cast<GLubyte*>(task->data->data()));
-    
+
 	// Unbind buffers
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// // Cleanup vao
-	// glDeleteVertexArrays(vao);
 
 	// Fence to know when it's ready
 	task->fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
 	// Done init
 	task->initialized = true;
-    // log("Finished initializing AsyncGPUReadbackRequest");
 }
 
 
@@ -226,7 +173,7 @@ extern "C" void update_renderThread(int event_id) {
 	if (!task->initialized || task->done) {
 		return;
 	}
-	
+
 	// Check fence state
 	GLint status = 0;
 	GLsizei length = 0;

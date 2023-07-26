@@ -18,21 +18,14 @@ void MediaCodecEncoder::Init() {
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_WIDTH, width);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_HEIGHT, height);
 
-    // AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, "video/avc"); // H.264 Advanced Video Coding
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, "video/hevc"); // H.265 High Efficiency Video Coding
     // not available for the hardware encoder
     // AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 12); // #12 COLOR_Format24bitBGR888 (RGB24)
-    // AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 21); // #21 COLOR_FormatYUV420SemiPlanar (NV12)
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 0x7fa30c07); // QOMX_COLOR_Format32bitRGBA8888
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, bitrate);
     AMediaFormat_setFloat(format, AMEDIAFORMAT_KEY_FRAME_RATE, fpsRate);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_I_FRAME_INTERVAL, 5);
 
-    //AMediaFormat_setInt32(format,AMEDIAFORMAT_KEY_STRIDE,mSize.width);
-    //AMediaFormat_setInt32(format,AMEDIAFORMAT_KEY_M  AX_WIDTH,mSize.width);
-    //AMediaFormat_setInt32(format,AMEDIAFORMAT_KEY_MAX_HEIGHT,mSize.height);
-
-    // encoder = AMediaCodec_createEncoderByType("video/avc");
     encoder = AMediaCodec_createEncoderByType("video/hevc");
     if(!encoder){
         HLogger.fmtLog<Paper::LogLevel::ERR>("Failed to create encoder");
@@ -87,7 +80,7 @@ void MediaCodecEncoder::Finish() {
     int64_t presentationTimeNs = computePresentationTimeNsec();
 
     // send end-of-stream to encoder, and drain remaining output
-    media_status_t status = AMediaCodec_queueInputBuffer(encoder, inBufferIdx, 0, out_size, presentationTimeNs, AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM);
+    AMediaCodec_queueInputBuffer(encoder, inBufferIdx, 0, out_size, presentationTimeNs, AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM);
     drainEncoder(true);
 
     releaseEncoder();
@@ -96,12 +89,12 @@ void MediaCodecEncoder::Finish() {
     f = nullptr;
 }
 
-void MediaCodecEncoder::queueFrame(rgb24* queuedFrame, std::optional<uint64_t> timeOfFrame){
+void MediaCodecEncoder::queueFrame(rgb24* queuedFrame){
     if(!initialized)
         return;
 
     // Feed any pending encoder output into the muxer.
-    HLogger.fmtLog<Paper::LogLevel::DBG>("Queueing frame, frames: {}", framesProcessing);
+    // HLogger.fmtLog<Paper::LogLevel::DBG>("Queueing frame, frames: {}", framesProcessing);
     framesProcessing++;
     drainEncoder(false);
 
@@ -213,7 +206,7 @@ void MediaCodecEncoder::drainEncoder(bool endOfStream) {
             // let's ignore it
         } else {
 
-            HLogger.fmtLog<Paper::LogLevel::DBG>("Output buffer idx {}", encoderStatus);
+            // HLogger.fmtLog<Paper::LogLevel::DBG>("Output buffer idx {}", encoderStatus);
 
             size_t out_size;
             uint8_t* encodedData = AMediaCodec_getOutputBuffer(encoder, encoderStatus, &out_size);
@@ -237,7 +230,7 @@ void MediaCodecEncoder::drainEncoder(bool endOfStream) {
                 if(!muxerStarted) {
                     HLogger.fmtLog<Paper::LogLevel::WRN>("Muxer hasn't started");
                 }
-                HLogger.fmtLog<Paper::LogLevel::DBG>("Muxing frame");
+                // HLogger.fmtLog<Paper::LogLevel::DBG>("Muxing frame");
                 framesProcessing--;
 
                 // adjust the ByteBuffer values to match BufferInfo (not needed?)

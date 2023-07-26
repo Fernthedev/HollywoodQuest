@@ -5,13 +5,6 @@
 
 #include "custom-types/shared/macros.hpp"
 
-enum struct ColorConvert {
-    NONE,
-    RGB,
-    // TODO: Fix conversion
-    YUV
-};
-
 struct rgb24
 {
     uint8_t r;

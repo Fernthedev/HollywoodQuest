@@ -6,12 +6,15 @@
 namespace UnityEngine {
     class Camera;
     class AudioListener;
+    class AudioSource;
 }
 
 namespace Hollywood {
     struct CameraRecordingSettings;
 
-    void initialize();
+    Hollywood::CameraCapture* SetCameraCapture(UnityEngine::Camera* camera, CameraRecordingSettings const& recordingSettings);
+    Hollywood::AudioCapture* SetAudioCapture(UnityEngine::AudioListener* listener);
+    Hollywood::AudioCapture* SetAudioCapture(UnityEngine::AudioSource* source);
 
     Hollywood::CameraCapture * SetCameraCapture(UnityEngine::Camera* camera, CameraRecordingSettings const& recordingSettings);
     Hollywood::AudioCapture * SetAudioCapture(UnityEngine::AudioListener* listener);
