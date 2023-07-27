@@ -1,4 +1,5 @@
 #include "Hollywood.hpp"
+#include "mux.hpp"
 
 #include "main.hpp"
 
@@ -92,4 +93,9 @@ Hollywood::AudioCapture* Hollywood::SetAudioCapture(UnityEngine::AudioListener* 
 
 Hollywood::AudioCapture* Hollywood::SetAudioCapture(UnityEngine::AudioSource* source) {
     return source->get_gameObject()->AddComponent<Hollywood::AudioCapture*>();
+}
+
+void Hollywood::MuxFilesSync(std::string_view sourceMp4, std::string_view sourceWav, std::string_view outputMp4) {
+    Muxer::muxFiles(sourceMp4, sourceWav, outputMp4);
+    Muxer::cleanup();
 }

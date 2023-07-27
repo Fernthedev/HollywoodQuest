@@ -16,6 +16,5 @@ namespace Hollywood {
     Hollywood::AudioCapture* SetAudioCapture(UnityEngine::AudioListener* listener);
     Hollywood::AudioCapture* SetAudioCapture(UnityEngine::AudioSource* source);
 
-    Hollywood::CameraCapture * SetCameraCapture(UnityEngine::Camera* camera, CameraRecordingSettings const& recordingSettings);
-    Hollywood::AudioCapture * SetAudioCapture(UnityEngine::AudioListener* listener);
+    void MuxFilesSync(std::string_view sourceMp4, std::string_view sourceWav, std::string_view outputMp4);
 }
