@@ -10,6 +10,7 @@ import requests  # For downloading files
 import os
 import shutil
 import zipfile
+import json
 
 repository = Github().get_repo('Fernthedev/ffmpeg-kit-speed')
 
@@ -22,6 +23,10 @@ ffmpegFolder = os.path.join(os.getcwd(), "ffmpeg")
 ffmpegTempFolder = os.path.join(os.getcwd(), "ffmpeg_temp")
 
 assets = release.get_assets()
+
+modjson = None
+with open("./mod.template.json", 'r') as f:
+    modjson = json.load(f)
 
 
 def download_zip(asset_name):
@@ -78,6 +83,8 @@ os.makedirs(ffmpegFolder)
 print("Moving library files")
 ffmpegTempLibs = os.path.join(os.path.join(ffmpegTempFolder, "jni"), "arm64-v8a")
 for filename in os.listdir(ffmpegTempLibs):
+    if filename not in modjson["libraryFiles"]:
+        continue
     file_path = os.path.join(ffmpegTempLibs, filename)
     print(f"Moving file {file_path} to {ffmpegFolder}")
     os.rename(file_path, os.path.join(ffmpegFolder, filename))

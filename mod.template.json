@@ -11,15 +11,10 @@
   "modFiles": [],
   "libraryFiles": [
     "libavcodec.so",
-    "libavdevice.so",
-    "libavfilter.so",
     "libavformat.so",
     "libavutil.so",
     "libc++_shared.so",
-    "libffmpegkit.so",
-    "libffmpegkit_abidetect.so",
-    "libswresample.so",
-    "libswscale.so"
+    "libswresample.so"
   ],
   "fileCopies": [],
   "copyExtensions": []
