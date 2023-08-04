@@ -34,13 +34,13 @@ void MediaCodecEncoder::Init() {
 
     media_status_t err = AMediaCodec_configure(encoder, format, NULL, NULL, AMEDIACODEC_CONFIGURE_FLAG_ENCODE);
     if(err != AMEDIA_OK){
-        HLogger.fmtLog<Paper::LogLevel::ERR>("Configure error: {}", err);
+        HLogger.fmtLog<Paper::LogLevel::ERR>("Configure error: {}", (int) err);
         return;
     }
 
     err = AMediaCodec_start(encoder);
     if(err != AMEDIA_OK){
-        HLogger.fmtLog<Paper::LogLevel::ERR>("Start error: {}", err);
+        HLogger.fmtLog<Paper::LogLevel::ERR>("Start error: {}", (int) err);
         return;
     }
 
@@ -197,7 +197,7 @@ void MediaCodecEncoder::drainEncoder(bool endOfStream) {
             trackIndex = AMediaMuxer_addTrack(muxer, newFormat);
             media_status_t err = AMediaMuxer_start(muxer);
             if(err != AMEDIA_OK) {
-                HLogger.fmtLog<Paper::LogLevel::ERR>("Start error: {}", err);
+                HLogger.fmtLog<Paper::LogLevel::ERR>("Start error: {}", (int) err);
             }
 
             muxerStarted = true;

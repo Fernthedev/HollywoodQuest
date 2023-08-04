@@ -57,10 +57,10 @@ namespace Muxer {
     void muxFiles(std::string_view sourceMp4, std::string_view sourceWav, std::string_view outputMp4) {
         HLogger.fmtLog<Paper::LogLevel::INF>("Muxing initializing");
 
-        av_log_set_callback(*[](void* ptr, int level, const char* fmt, __va_list args) {
-            std::string msg = string_vformat(fmt, args);
-            HLogger.fmtLog<Paper::LogLevel::INF>("FFMPEG [{}] {}", level, msg);
-        });
+        // av_log_set_callback(*[](void* ptr, int level, const char* fmt, __va_list args) {
+        //     std::string msg = string_vformat(fmt, args);
+        //     HLogger.fmtLog<Paper::LogLevel::INF>("FFMPEG [{}] {}", level, msg);
+        // });
 
 
         // open video and deduce its information
