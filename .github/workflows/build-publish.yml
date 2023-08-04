@@ -82,12 +82,10 @@ jobs:
           if-no-files-found: error
 
       - name: Rename debug
-        if: github.event_name != 'pull_request' && steps.commit-regex.outputs.match != ''
         run: |
           mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
 
       - name: Create qmod
-        if: github.event_name != 'pull_request' && steps.commit-regex.outputs.match != ''
         run: |
           pwsh -Command ./createqmod.ps1 ${{env.qmodName}}
 
