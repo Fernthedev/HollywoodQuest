@@ -5,10 +5,11 @@ env:
   qmodName: Hollywood
 
 on:
+  workflow_dispatch:
   push:
-    branches: [master]
+    branches-ignore:
+      - 'version*'
   pull_request:
-    branches: [master]
 
 jobs:
   build:
@@ -28,17 +29,8 @@ jobs:
           echo "$ANDROID_NDK_LATEST_HOME" > ${GITHUB_WORKSPACE}/ndkpath.txt
           cat ${GITHUB_WORKSPACE}/ndkpath.txt
 
-      - name: Check for release
-        uses: actions-ecosystem/action-regex-match@v2
-        id: commit-regex
-        if: github.event_name != 'pull_request'
-        with:
-          text: ${{ github.event.head_commit.message }}
-          regex: ^release.*?((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)?):?\W*(.*)
-          flags: i
-
-      - name: QPM Rust Action
-        uses: Fernthedev/qpm-rust-action@main
+      - name: QPM Action
+        uses: Fernthedev/qpm-action@main
         with:
           workflow_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -53,8 +45,6 @@ jobs:
           ls -la ${GITHUB_WORKSPACE}/extern/includes
           echo libs:
           ls -la ${GITHUB_WORKSPACE}/extern/libs
-          echo cache:
-          ls -la $HOME/.local/share/QPM-Rust/cache
 
       - name: Cache FFMPEG
         id: cache-ffmpeg
@@ -101,34 +91,16 @@ jobs:
         run: |
           pwsh -Command ./createqmod.ps1 ${{env.qmodName}}
 
-      - name: Upload to Release
-        id: upload_file_release
-        uses: softprops/action-gh-release@v0.1.12
-        if: github.event_name != 'pull_request' && steps.commit-regex.outputs.match != ''
+      - name: Upload debug artifact
+        uses: actions/upload-artifact@v2
         with:
-          name: ${{ steps.commit-regex.outputs.group2 }}
-          tag_name: ${{ steps.commit-regex.outputs.group1 }}
-          files: |
-            ./build/${{ steps.libname.outputs.NAME }}
-            ./build/debug/debug_${{ steps.libname.outputs.NAME }}
-            ./${{ env.qmodName }}.qmod
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: debug_${{ steps.libname.outputs.NAME }}
+          path: ./build/debug/debug_${{ steps.libname.outputs.NAME }}
+          if-no-files-found: error
 
-      - name: QPM Publish
-        uses: Fernthedev/qpm-rust-action@main
+      - name: Upload qmod artifact
+        uses: actions/upload-artifact@v2
         with:
-          workflow_token: ${{ secrets.GITHUB_TOKEN }}
-
-          restore: false
-
-          eager_publish: ${{ github.event_name != 'pull_request' && steps.commit-regex.outputs.match != '' }} # Will publish the package
-          publish_token: ${{ secrets.QPM_TOKEN }} # Token required for authorization publish to qpackages.com
-          version: "${{ steps.commit-regex.outputs.group1 }}" # defaults to qpm-rust version, do not include v
-
-          # set to true if applicable, ASSUMES the file is already a release asset
-          qpm_release_bin: true
-          qpm_debug_bin: false
-
-          # Name of qmod in release asset. Assumes exists, same as prior
-          qpm_qmod: ${{ env.qmodName }}.qmod
+          name: ${{ env.qmodName }}.qmod
+          path: ./${{ env.qmodName }}.qmod
+          if-no-files-found: error

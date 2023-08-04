@@ -32,8 +32,8 @@ jobs:
           echo "$ANDROID_NDK_LATEST_HOME" > ${GITHUB_WORKSPACE}/ndkpath.txt
           cat ${GITHUB_WORKSPACE}/ndkpath.txt
 
-      - name: QPM Rust Action
-        uses: Fernthedev/qpm-rust-action@main
+      - name: QPM Action
+        uses: Fernthedev/qpm-action@main
         with:
           workflow_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -48,8 +48,6 @@ jobs:
           ls -la ${GITHUB_WORKSPACE}/extern/includes
           echo libs:
           ls -la ${GITHUB_WORKSPACE}/extern/libs
-          echo cache:
-          ls -la $HOME/.local/share/QPM-Rust/cache
 
       - name: Cache FFMPEG
         id: cache-ffmpeg
@@ -92,7 +90,7 @@ jobs:
         uses: softprops/action-gh-release@v0.1.12
         with:
           name: ${{ github.event.inputs.release_msg }}
-          tag_name: ${{ github.event.inputs.version }}
+          tag_name: v${{ github.event.inputs.version }}
           files: |
             ./build/${{ steps.libname.outputs.NAME }}
             ./build/debug/debug_${{ steps.libname.outputs.NAME }}
@@ -101,7 +99,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: QPM Publish
-        uses: Fernthedev/qpm-rust-action@main
+        uses: Fernthedev/qpm-action@main
         with:
           workflow_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -109,6 +107,7 @@ jobs:
 
           eager_publish: true # Will publish the package
           publish_token: ${{ secrets.QPM_TOKEN }} # Token required for authorization publish to qpackages.com
+          tag: v${{ github.event.inputs.version }}
           version: "${{ github.event.inputs.version }}" # defaults to qpm-rust version, do not include v
 
           # set to true if applicable, ASSUMES the file is already a release asset
