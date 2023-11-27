@@ -10,8 +10,7 @@ Shader Shader::fromFile(const char * vertexPath, const char *fragmentPath) {
     // ensure ifstream objects can throw exceptions:
     vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
     fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-    try
-    {
+    try {
         // open files
         vShaderFile.open(vertexPath);
         fShaderFile.open(fragmentPath);
@@ -26,8 +25,7 @@ Shader Shader::fromFile(const char * vertexPath, const char *fragmentPath) {
         vertexCode   = vShaderStream.str();
         fragmentCode = fShaderStream.str();
     }
-    catch (std::ifstream::failure& e)
-    {
+    catch (std::ifstream::failure& e) {
         HLogger.fmtThrowError("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ {}", e.what());
     }
     return Shader(vertexCode.c_str(), fragmentCode.c_str());
@@ -36,8 +34,7 @@ Shader Shader::fromFile(const char * vertexPath, const char *fragmentPath) {
 void checkCompileErrors(unsigned int shader, const char* name) {
     GLint isCompiled = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-    if(isCompiled == GL_FALSE)
-    {
+    if(isCompiled == GL_FALSE) {
         GLint maxLength = 0;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
 
@@ -71,7 +68,7 @@ Shader::Shader(const char *vShaderCode, const char *fShaderCode) {
     glAttachShader(Shader_ID, vertex);
     glAttachShader(Shader_ID, fragment);
     glLinkProgram(Shader_ID);
-//    checkCompileErrors(ID, "PROGRAM");
+    // checkCompileErrors(ID, "PROGRAM");
     // delete the shaders as they're linked into our program now and no longer necessary
     glDeleteShader(vertex);
     glDeleteShader(fragment);

@@ -2,15 +2,14 @@
 
 #pragma once
 
-#include <GLES3/gl3.h> // include glad to get all the required OpenGL headers
+#include <GLES3/gl3.h> // include to get all the required OpenGL headers
 
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 
-class Shader
-{
+class Shader {
 public:
     // the program ID
     unsigned int Shader_ID;

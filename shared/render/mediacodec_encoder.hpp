@@ -1,4 +1,4 @@
-// #pragma once
+#pragma once
 
 #include "main.hpp"
 #include "../CustomTypes/AsyncGPUReadbackPluginRequest.hpp"

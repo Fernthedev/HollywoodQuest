@@ -166,7 +166,7 @@ namespace Muxer {
         }
         // configure some values not set by new_stream
         outputAudioCodecContext = outputAudioStream->codec;
-        outputAudioCodecContext->channel_layout = av_get_channel_layout("stereo");;
+        outputAudioCodecContext->channel_layout = av_get_channel_layout("stereo");
         outputAudioCodecContext->channels = av_get_channel_layout_nb_channels(outputAudioCodecContext->channel_layout);
         outputAudioCodecContext->sample_fmt = audioCodec->sample_fmts[0];
         outputAudioCodecContext->sample_rate = audioCodecContext->sample_rate;
@@ -193,14 +193,17 @@ namespace Muxer {
 
 
         // create transcoder resampler
-        audioSwr = swr_alloc_set_opts(nullptr,
+        audioSwr = swr_alloc_set_opts(
+            nullptr,
             outputAudioCodecContext->channel_layout,
             outputAudioCodecContext->sample_fmt,
             outputAudioCodecContext->sample_rate,
             audioCodecContext->channel_layout,
             audioCodecContext->sample_fmt,
             audioCodecContext->sample_rate,
-            0, nullptr);
+            0,
+            nullptr
+        );
         if(!audioSwr) {
             HLogger.fmtLog<Paper::LogLevel::ERR>("Failed to make audio swr");
             return;

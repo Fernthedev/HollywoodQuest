@@ -57,8 +57,7 @@ extern "C" int makeRequest_mainThread(GLuint texture, GLuint texture2, int miple
 }
 
 // Code from xyonico, thank you very much!
-void BlitShader(GLuint cameraSrcTexture, Shader& shader)
-{
+void BlitShader(GLuint cameraSrcTexture, Shader& shader) {
     // This function assumes that a framebuffer has already been bound with a texture different from cameraSrcTexture.
 
     // Prepare the shader
@@ -129,10 +128,9 @@ extern "C" void makeRequest_renderThread(int event_id) {
 	glViewport(0,0, task->width, task->height);
 
     IL2CPP_CATCH_HANDLER(
-	// Enable sRGB shader
-	static Shader sRGBShader = shaderRGBGammaConvert();
-
-	BlitShader(task->origTexture, sRGBShader);
+		// Enable sRGB shader
+		static Shader sRGBShader = shaderRGBGammaConvert();
+		BlitShader(task->origTexture, sRGBShader);
 	)
 
 	// Create and bind pbo (pixel buffer object) to fbo

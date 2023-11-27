@@ -2,9 +2,7 @@
 #include "render/mediacodec_encoder.hpp"
 
 MediaCodecEncoder::MediaCodecEncoder(uint32_t width, uint32_t height, uint32_t fpsRate, int bitrate, std::string_view filepath)
-    : AbstractVideoEncoder(width, height, fpsRate), bitrate(bitrate * 1000), filename(filepath) {
-
-}
+    : AbstractVideoEncoder(width, height, fpsRate), bitrate(bitrate * 1000), filename(filepath) {}
 
 MediaCodecEncoder::~MediaCodecEncoder() {
     Finish();
@@ -51,10 +49,10 @@ void MediaCodecEncoder::Init() {
     }
 
     // Create a MediaMuxer.  We can't add the video track and start() the muxer here,
-    // because our MediaFormat doesn't have the Magic Goodies.  These can only be
+    // because our MediaFormat doesn't have the Magic Goodies. These can only be
     // obtained from the encoder after it has started processing data.
-    //
-    // We're not actually interested in multiplexing audio.  We just want to convert
+
+    // We're not actually interested in multiplexing audio (yet). We just want to convert
     // the raw H.264 elementary stream we get from MediaCodec into a .mp4 file.
     muxer = AMediaMuxer_new(fileno(f), AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4);
     if(!muxer){
@@ -111,17 +109,13 @@ void MediaCodecEncoder::queueFrame(rgb24* queuedFrame){
 
     // Generate a new frame of input.
 
-    /**
-                  * Get the index of the next available input buffer. An app will typically use this with
-                  * getInputBuffer() to get a pointer to the buffer, then copy the data to be encoded or decoded
-                  * into the buffer before passing it to the codec.
-                  */
+    // Get the index of the next available input buffer. An app will typically use this with
+    // getInputBuffer() to get a pointer to the buffer, then copy the data to be encoded or decoded
+    // into the buffer before passing it to the codec.
     ssize_t inBufferIdx = AMediaCodec_dequeueInputBuffer(encoder, -1);
 
-    /**
-                  * Get an input buffer. The specified buffer index must have been previously obtained from
-                  * dequeueInputBuffer, and not yet queued.
-                  */
+    // Get an input buffer. The specified buffer index must have been previously obtained from
+    // dequeueInputBuffer, and not yet queued.
     size_t out_size;
     uint8_t* inBuffer = AMediaCodec_getInputBuffer(encoder, inBufferIdx, &out_size);
 
@@ -133,9 +127,7 @@ void MediaCodecEncoder::queueFrame(rgb24* queuedFrame){
     // memcpy(inBuffer, queuedFrame, out_size);
     free(queuedFrame);
 
-    /**
-          * Send the specified buffer to the codec for processing.
-          */
+    // Send the specified buffer to the codec for processing.
     // int64_t presentationTimeNs = timestamp;
     int64_t presentationTimeNs = computePresentationTimeNsec();
 
@@ -143,21 +135,19 @@ void MediaCodecEncoder::queueFrame(rgb24* queuedFrame){
     if(status != AMEDIA_OK)
         HLogger.fmtLog<Paper::LogLevel::WRN>("Something went wrong while pushing frame to input buffer");
 
-    // Submit it to the encoder.  The eglSwapBuffers call will block if the input
+    // Submit it to the encoder. The eglSwapBuffers call will block if the input
     // is full, which would be bad if it stayed full until we dequeued an output
-    // buffer (which we can't do, since we're stuck here).  So long as we fully drain
+    // buffer (which we can't do, since we're stuck here). So long as we fully drain
     // the encoder before supplying additional input, the system guarantees that we
     // can supply another frame without blocking.
     // AMediaCodec_flush(encoder);
 }
 
-/**
-     * Extracts all pending data from the encoder.
-     *
-     * If endOfStream is not set, this returns when there is no more data to drain.  If it
-     * is set, we send EOS to the encoder, and then iterate until we see EOS on the output.
-     * Calling this with endOfStream set should be done once, right before stopping the muxer.
-     */
+// Extracts all pending data from the encoder.
+
+// If endOfStream is not set, this returns when there is no more data to drain.  If it
+// is set, we send EOS to the encoder, and then iterate until we see EOS on the output.
+// Calling this with endOfStream set should be done once, right before stopping the muxer.
 void MediaCodecEncoder::drainEncoder(bool endOfStream) {
 
     if(endOfStream) {
@@ -252,9 +242,7 @@ void MediaCodecEncoder::drainEncoder(bool endOfStream) {
     }
 }
 
-/**
- * Releases encoder resources.  May be called after partial / failed initialization.
- */
+// Releases encoder resources.  May be called after partial / failed initialization.
 void MediaCodecEncoder::releaseEncoder() {
     if(encoder)
         AMediaCodec_stop(encoder);
@@ -275,10 +263,7 @@ void MediaCodecEncoder::releaseEncoder() {
     initialized = false;
 }
 
-/**
-         * Generates the presentation time for frame N, in nanoseconds.
-         */
-
+// Generates the presentation time for frame N, in nanoseconds.
 long long MediaCodecEncoder::computePresentationTimeNsec() {
     frameCounter++;
     return static_cast<long long>(frameCounter * 1000000ull / (double) fpsRate);
