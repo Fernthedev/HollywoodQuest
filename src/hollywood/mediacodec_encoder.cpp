@@ -19,7 +19,9 @@ void MediaCodecEncoder::Init() {
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, "video/hevc"); // H.265 High Efficiency Video Coding
     // not available for the hardware encoder
     // AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 12); // #12 COLOR_Format24bitBGR888 (RGB24)
-    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 0x7fa30c07); // QOMX_COLOR_Format32bitRGBA8888
+    // not available on the q3 T_T
+    // AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 0x7fa30c07); // QOMX_COLOR_Format32bitRGBA8888
+    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 0x15); // COLOR_FormatYUV420SemiPlanar
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, bitrate);
     AMediaFormat_setFloat(format, AMEDIAFORMAT_KEY_FRAME_RATE, fpsRate);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_I_FRAME_INTERVAL, 5);
@@ -119,12 +121,32 @@ void MediaCodecEncoder::queueFrame(rgb24* queuedFrame){
     size_t out_size;
     uint8_t* inBuffer = AMediaCodec_getInputBuffer(encoder, inBufferIdx, &out_size);
 
-    for(int i = 0; i < out_size / 4; i ++) {
-        memcpy(inBuffer + (i*4), queuedFrame + i, 3);
-        // inBuffer[(i*4) + 3] = 255;
+    int yIndex = 0;
+    int uvIndex = width * height;
+
+    int y, u, v;
+    int index = 0;
+
+    int rgbIndex = 0;
+
+    for (int j = 0; j < height; j++) {
+        for (int i = 0; i < width; i++) {
+            auto rgb = queuedFrame[rgbIndex++];
+
+            y = ((66 * rgb.r + 129 * rgb.g + 25 * rgb.b + 128) >> 8) + 16;
+            u = ((-38 * rgb.r - 74 * rgb.g + 112 * rgb.b + 128) >> 8) + 128;
+            v = ((112 * rgb.r - 94 * rgb.g - 18 * rgb.b + 128) >> 8) + 128;
+
+            inBuffer[yIndex++] = y;
+
+            if (j % 2 == 0 && index % 2 == 0) {
+                inBuffer[uvIndex++] = u;
+                inBuffer[uvIndex++] = v;
+            }
+            index++;
+        }
     }
-    // here we actually copy the data.
-    // memcpy(inBuffer, queuedFrame, out_size);
+
     free(queuedFrame);
 
     // Send the specified buffer to the codec for processing.

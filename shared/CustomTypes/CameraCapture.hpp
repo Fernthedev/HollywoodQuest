@@ -15,7 +15,6 @@
 #include "custom-types/shared/coroutine.hpp"
 #include "beatsaber-hook/shared/utils/gc-alloc.hpp"
 
-#include <experimental/coroutine>
 #include <memory>
 
 namespace Hollywood {
