@@ -1,24 +1,24 @@
 #include "Hollywood.hpp"
-#include "mux.hpp"
 
-#include "main.hpp"
-
-#include "beatsaber-hook/shared/utils/il2cpp-functions.hpp"
-#include "custom-types/shared/register.hpp"
-
-#include "UnityEngine/GameObject.hpp"
-#include "UnityEngine/Camera.hpp"
+#include "CustomTypes/AudioCapture.hpp"
+#include "CustomTypes/CameraCapture.hpp"
 #include "UnityEngine/AudioListener.hpp"
 #include "UnityEngine/AudioSource.hpp"
+#include "UnityEngine/Camera.hpp"
+#include "UnityEngine/FilterMode.hpp"
+#include "UnityEngine/GL.hpp"
+#include "UnityEngine/GameObject.hpp"
+#include "UnityEngine/Matrix4x4.hpp"
+#include "UnityEngine/Rect.hpp"
+#include "UnityEngine/RenderTextureFormat.hpp"
+#include "UnityEngine/RenderTextureReadWrite.hpp"
 #include "UnityEngine/StereoTargetEyeMask.hpp"
 #include "UnityEngine/TextureWrapMode.hpp"
-#include "UnityEngine/FilterMode.hpp"
-#include "UnityEngine/Matrix4x4.hpp"
-#include "UnityEngine/GL.hpp"
-
-#include "CustomTypes/CameraCapture.hpp"
-#include "CustomTypes/AudioCapture.hpp"
-#include "UnityEngine/Rect.hpp"
+#include "UnityEngine/Vector3.hpp"
+#include "beatsaber-hook/shared/utils/il2cpp-functions.hpp"
+#include "custom-types/shared/register.hpp"
+#include "main.hpp"
+#include "mux.hpp"
 
 inline UnityEngine::Matrix4x4 MatrixTranslate(UnityEngine::Vector3 const& vector) {
     UnityEngine::Matrix4x4 result;
@@ -41,48 +41,54 @@ inline UnityEngine::Matrix4x4 MatrixTranslate(UnityEngine::Vector3 const& vector
     return result;
 }
 
-Hollywood::CameraCapture* Hollywood::SetCameraCapture(UnityEngine::Camera *camera, CameraRecordingSettings const& recordingSettings) {
+Hollywood::CameraCapture* Hollywood::SetCameraCapture(UnityEngine::Camera* camera, CameraRecordingSettings const& recordingSettings) {
 
-    camera->set_stereoTargetEye(UnityEngine::StereoTargetEyeMask::None);
+    camera->stereoTargetEye = UnityEngine::StereoTargetEyeMask::None;
 
     // Idk what this does
-    camera->set_orthographic(false);
+    camera->orthographic = false;
 
-    camera->set_fieldOfView(recordingSettings.fov);
+    camera->fieldOfView = recordingSettings.fov;
 
     // Force it to render into texture
-    camera->set_forceIntoRenderTexture(true);
+    camera->forceIntoRenderTexture = true;
 
     // Set aspect ratio accordingly
-    camera->set_aspect(float(recordingSettings.width) / float(recordingSettings.height));
+    camera->aspect = float(recordingSettings.width) / float(recordingSettings.height);
 
-    static auto set_pixelRect = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Rect &>(
-            "UnityEngine.Camera::set_pixelRect_Injected");
+    static auto set_pixelRect =
+        il2cpp_utils::resolve_icall<void, UnityEngine::Camera*, UnityEngine::Rect&>("UnityEngine.Camera::set_pixelRect_Injected");
 
     auto pixelRect = UnityEngine::Rect(0, 0, (float) recordingSettings.width, (float) recordingSettings.height);
     set_pixelRect(camera, pixelRect);
 
-    auto texture = UnityEngine::RenderTexture::New_ctor(recordingSettings.width, recordingSettings.height, 24,
-                                                        (UnityEngine::RenderTextureFormat) UnityEngine::RenderTextureFormat::Default,
-                                                        (UnityEngine::RenderTextureReadWrite) UnityEngine::RenderTextureReadWrite::Default);
-    texture->set_wrapMode(UnityEngine::TextureWrapMode::Clamp);
-    texture->set_filterMode(UnityEngine::FilterMode::Bilinear);
+    auto texture = UnityEngine::RenderTexture::New_ctor(
+        recordingSettings.width,
+        recordingSettings.height,
+        24,
+        (UnityEngine::RenderTextureFormat) UnityEngine::RenderTextureFormat::Default,
+        (UnityEngine::RenderTextureReadWrite) UnityEngine::RenderTextureReadWrite::Default
+    );
+    texture->wrapMode = UnityEngine::TextureWrapMode::Clamp;
+    texture->filterMode = UnityEngine::FilterMode::Bilinear;
     texture->Create();
     UnityEngine::RenderTexture::set_active(texture);
     UnityEngine::Object::DontDestroyOnLoad(texture);
-    auto cameraCapture = camera->get_gameObject()->AddComponent<Hollywood::CameraCapture *>();
+    auto cameraCapture = camera->gameObject->AddComponent<Hollywood::CameraCapture*>();
     cameraCapture->readOnlyTexture = texture;
-    camera->set_targetTexture(texture);
-    camera->set_aspect(float(recordingSettings.width) / float(recordingSettings.height));
+    camera->targetTexture = texture;
+    camera->aspect = float(recordingSettings.width) / float(recordingSettings.height);
 
     // destroy texture with camera?
 
-   static auto set_cullingMatrix = il2cpp_utils::resolve_icall<void, UnityEngine::Camera *, UnityEngine::Matrix4x4>(
-           "UnityEngine.Camera::set_cullingMatrix_Injected");
+    static auto set_cullingMatrix =
+        il2cpp_utils::resolve_icall<void, UnityEngine::Camera*, UnityEngine::Matrix4x4>("UnityEngine.Camera::set_cullingMatrix_Injected");
 
-   set_cullingMatrix(camera, UnityEngine::Matrix4x4::Ortho(-99999, 99999, -99999, 99999, 0.001f, 99999) *
-                             MatrixTranslate(UnityEngine::Vector3::get_forward() * -99999 / 2) *
-                             camera->get_worldToCameraMatrix());
+    auto forwardMult = UnityEngine::Vector3::op_Multiply(UnityEngine::Vector3::get_forward(), -49999.5);
+    auto mat = UnityEngine::Matrix4x4::Ortho(-99999, 99999, -99999, 99999, 0.001, 99999);
+    mat = UnityEngine::Matrix4x4::op_Multiply(mat, MatrixTranslate(forwardMult));
+    mat = UnityEngine::Matrix4x4::op_Multiply(mat, camera->worldToCameraMatrix);
+    set_cullingMatrix(camera, mat);
 
     return cameraCapture;
 }

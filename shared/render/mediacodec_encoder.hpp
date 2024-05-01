@@ -1,22 +1,20 @@
 #pragma once
 
-#include "main.hpp"
+#include <fstream>
+#include <iostream>
+
 #include "../CustomTypes/AsyncGPUReadbackPluginRequest.hpp"
 #include "../queue/readerwriterqueue.h"
 #include "AbstractEncoder.hpp"
 #include "UnityEngine/Time.hpp"
-
+#include "main.hpp"
 #include "media/NdkMediaCodec.h"
 #include "media/NdkMediaFormat.h"
 #include "media/NdkMediaMuxer.h"
 
-#include <iostream>
-#include <fstream>
-
 class MediaCodecEncoder : public Hollywood::AbstractVideoEncoder {
-public:
-    MediaCodecEncoder(uint32_t width, uint32_t height, uint32_t fpsRate,
-        int bitrate, std::string_view filepath);
+   public:
+    MediaCodecEncoder(uint32_t width, uint32_t height, uint32_t fpsRate, int bitrate, std::string_view filepath);
 
     uint32_t threadPoolCount = 2;
 
@@ -26,33 +24,23 @@ public:
 
     void Finish();
 
-    int FrameCount() {
-        return frameCounter;
-    };
+    int FrameCount() { return frameCounter; };
 
-    bool IsInitialized() {
-        return initialized;
-    };
+    bool IsInitialized() { return initialized; };
 
-    float RecordingLength() {
-        return float(frameCounter) * (1.0f / float(fpsRate));
-    };
+    float RecordingLength() { return float(frameCounter) * (1.0f / float(fpsRate)); };
 
-    float TotalLength() const {
-        return UnityEngine::Time::get_time() - startTime;
-    };
+    float TotalLength() const { return UnityEngine::Time::get_time() - startTime; };
 
-    size_t approximateFramesToRender() override {
-        return framesProcessing;
-    }
+    size_t approximateFramesToRender() override { return framesProcessing; }
 
     ~MediaCodecEncoder() override;
 
-private:
+   private:
     float startTime = 0;
     int frameCounter = 0;
-    const uint32_t bitrate;
-    const std::string filename;
+    uint32_t const bitrate;
+    std::string const filename;
     FILE* f;
 
     AMediaCodec* encoder;

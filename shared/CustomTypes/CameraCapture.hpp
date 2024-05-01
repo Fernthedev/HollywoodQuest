@@ -1,24 +1,21 @@
 #pragma once
 
-#include "AsyncGPUReadbackPluginRequest.hpp"
-#include "../render/AbstractEncoder.hpp"
-
-#include <string>
 #include <deque>
+#include <memory>
+#include <string>
 
+#include "../render/AbstractEncoder.hpp"
+#include "AsyncGPUReadbackPluginRequest.hpp"
+#include "System/Collections/Generic/List_1.hpp"
 #include "UnityEngine/MonoBehaviour.hpp"
 #include "UnityEngine/RenderTexture.hpp"
-
-#include "System/Collections/Generic/List_1.hpp"
-
-#include "custom-types/shared/macros.hpp"
-#include "custom-types/shared/coroutine.hpp"
 #include "beatsaber-hook/shared/utils/gc-alloc.hpp"
-
-#include <memory>
+#include "custom-types/shared/coroutine.hpp"
+#include "custom-types/shared/macros.hpp"
 
 namespace Hollywood {
-    using RequestList = std::deque<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*, gc_allocator<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*>>;
+    using RequestList =
+        std::deque<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*, gc_allocator<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*>>;
 
     // Default recommended settings
     struct CameraRecordingSettings {
@@ -32,15 +29,13 @@ namespace Hollywood {
 }
 
 DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
-public:
+   public:
     // The texture to read
     DECLARE_INSTANCE_FIELD(UnityEngine::RenderTexture*, readOnlyTexture);
 
     void Init(CameraRecordingSettings const& settings);
 
-    CameraRecordingSettings const& getRecordingSettings() const {
-        return recordingSettings;
-    }
+    CameraRecordingSettings const& getRecordingSettings() const { return recordingSettings; }
 
     /// Max frames allowed in the render queue
     uint32_t maxFramesAllowedInQueue = 10;
@@ -58,7 +53,7 @@ public:
     /// Returns amount of frames remaining to be rendered
     DECLARE_INSTANCE_METHOD(int, remainingFramesToRender);
 
-private:
+   private:
     std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
     std::chrono::steady_clock::time_point startTime;
 

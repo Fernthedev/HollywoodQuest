@@ -1,15 +1,16 @@
 #include "opengl_replay/Shader.hpp"
+
 #include "main.hpp"
 
-Shader Shader::fromFile(const char * vertexPath, const char *fragmentPath) {
+Shader Shader::fromFile(char const* vertexPath, char const* fragmentPath) {
     // 1. retrieve the vertex/fragment source code from filePath
     std::string vertexCode;
     std::string fragmentCode;
     std::ifstream vShaderFile;
     std::ifstream fShaderFile;
     // ensure ifstream objects can throw exceptions:
-    vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-    fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
+    vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     try {
         // open files
         vShaderFile.open(vertexPath);
@@ -22,19 +23,18 @@ Shader Shader::fromFile(const char * vertexPath, const char *fragmentPath) {
         vShaderFile.close();
         fShaderFile.close();
         // convert stream into string
-        vertexCode   = vShaderStream.str();
+        vertexCode = vShaderStream.str();
         fragmentCode = fShaderStream.str();
-    }
-    catch (std::ifstream::failure& e) {
-        HLogger.fmtThrowError("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ {}", e.what());
+    } catch (std::ifstream::failure& e) {
+        logger.fmtThrowError("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ {}", e.what());
     }
     return Shader(vertexCode.c_str(), fragmentCode.c_str());
 }
 
-void checkCompileErrors(unsigned int shader, const char* name) {
+void checkCompileErrors(unsigned int shader, char const* name) {
     GLint isCompiled = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-    if(isCompiled == GL_FALSE) {
+    if (isCompiled == GL_FALSE) {
         GLint maxLength = 0;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
 
@@ -44,13 +44,13 @@ void checkCompileErrors(unsigned int shader, const char* name) {
 
         // Provide the infolog in whatever manor you deem best.
         // Exit with failure.
-        glDeleteShader(shader); // Don't leak the shader.
+        glDeleteShader(shader);  // Don't leak the shader.
         std::string s = std::string(errorLog.begin(), errorLog.end());
-        HLogger.fmtThrowError("Unable to create {} shader: {}", name, s.c_str());
+        logger.fmtThrowError("Unable to create {} shader: {}", name, s.c_str());
     }
 }
 
-Shader::Shader(const char *vShaderCode, const char *fShaderCode) {
+Shader::Shader(char const* vShaderCode, char const* fShaderCode) {
     // 2. compile shaders
     unsigned int vertex, fragment;
     // vertex shader
@@ -78,14 +78,14 @@ void Shader::use() const {
     glUseProgram(Shader_ID);
 }
 
-void Shader::setBool(const std::string &name, bool value) const {
-    glUniform1i(glGetUniformLocation(Shader_ID, name.c_str()), (int)value);
+void Shader::setBool(std::string const& name, bool value) const {
+    glUniform1i(glGetUniformLocation(Shader_ID, name.c_str()), (int) value);
 }
 
-void Shader::setInt(const std::string &name, int value) const {
+void Shader::setInt(std::string const& name, int value) const {
     glUniform1i(glGetUniformLocation(Shader_ID, name.c_str()), value);
 }
 
-void Shader::setFloat(const std::string &name, float value) const {
+void Shader::setFloat(std::string const& name, float value) const {
     glUniform1f(glGetUniformLocation(Shader_ID, name.c_str()), value);
 }

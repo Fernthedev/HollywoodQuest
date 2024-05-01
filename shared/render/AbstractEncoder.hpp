@@ -5,14 +5,12 @@
 namespace Hollywood {
 
     class AbstractVideoEncoder {
-    public:
-        const uint32_t width;
-        const uint32_t height;
-        const uint32_t fpsRate;
+       public:
+        uint32_t const width;
+        uint32_t const height;
+        uint32_t const fpsRate;
 
-        AbstractVideoEncoder(const uint32_t width, const uint32_t height, const uint32_t fpsRate) : width(width),
-                                                                                                    height(height),
-                                                                                                    fpsRate(fpsRate) {}
+        AbstractVideoEncoder(uint32_t const width, uint32_t const height, uint32_t const fpsRate) : width(width), height(height), fpsRate(fpsRate) {}
 
         /**
          * @brief Sends the frame to the encoder.
@@ -23,24 +21,17 @@ namespace Hollywood {
          * @param timeOfFrame Depending on the type of encoder and mode,
          * this will be used to place the frame in the correct keyframe
          */
-        virtual void queueFrame(rgb24* data) = 0; // implement in encoder
-        virtual void Init() = 0; // todo: Encapsulate to force initialized variable to true?
+        virtual void queueFrame(rgb24* data) = 0;  // implement in encoder
+        virtual void Init() = 0;  // todo: Encapsulate to force initialized variable to true?
 
         [[nodiscard]] bool isInitialized() const { return initialized; }
 
-
         // This aren't really needed but we'll keep them anyways
-        [[nodiscard]] uint32_t getWidth() const {
-            return width;
-        }
+        [[nodiscard]] uint32_t getWidth() const { return width; }
 
-        [[nodiscard]] uint32_t getHeight() const {
-            return height;
-        }
+        [[nodiscard]] uint32_t getHeight() const { return height; }
 
-        [[nodiscard]] uint32_t getFpsRate() const {
-            return fpsRate;
-        }
+        [[nodiscard]] uint32_t getFpsRate() const { return fpsRate; }
 
         /**
          * @brief
@@ -50,7 +41,7 @@ namespace Hollywood {
 
         virtual ~AbstractVideoEncoder() = default;
 
-    protected:
+       protected:
         bool initialized = false;
     };
 

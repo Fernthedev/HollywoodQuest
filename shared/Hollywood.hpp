@@ -1,7 +1,7 @@
 #pragma once
 
-#include "CustomTypes/CameraCapture.hpp"
 #include "CustomTypes/AudioCapture.hpp"
+#include "CustomTypes/CameraCapture.hpp"
 
 namespace UnityEngine {
     class Camera;

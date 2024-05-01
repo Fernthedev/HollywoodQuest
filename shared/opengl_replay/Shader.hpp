@@ -2,27 +2,26 @@
 
 #pragma once
 
-#include <GLES3/gl3.h> // include to get all the required OpenGL headers
+#include <GLES3/gl3.h>  // include to get all the required OpenGL headers
 
-#include <string>
 #include <fstream>
-#include <sstream>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 class Shader {
-public:
+   public:
     // the program ID
     unsigned int Shader_ID;
 
     // constructor reads and builds the shader
-    Shader(const char* vertexCode, const char* fragmentCode);
+    Shader(char const* vertexCode, char const* fragmentCode);
 
-    static Shader fromFile(const char* vextexPath, const char* fragmentPath);
+    static Shader fromFile(char const* vextexPath, char const* fragmentPath);
     // use/activate the shader
     void use() const;
     // utility uniform functions
-    void setBool(const std::string &name, bool value) const;
-    void setInt(const std::string &name, int value) const;
-    void setFloat(const std::string &name, float value) const;
+    void setBool(std::string const& name, bool value) const;
+    void setInt(std::string const& name, int value) const;
+    void setFloat(std::string const& name, float value) const;
 };
-

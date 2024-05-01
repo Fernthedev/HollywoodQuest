@@ -1,50 +1,47 @@
 #pragma once
 
-#include "UnityEngine/MonoBehaviour.hpp"
-
-#include "custom-types/shared/macros.hpp"
-
-#include <iostream>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
 #include <cstring>
-#include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <string>
+
+#include "UnityEngine/MonoBehaviour.hpp"
+#include "custom-types/shared/macros.hpp"
 
 namespace Hollywood {
     struct AudioWriter {
-        void OpenFile(const std::string& filename);
-        void Write(Array<float>* audioData);
+        void OpenFile(std::string const& filename);
+        void Write(ArrayW<float> audioData);
         void AddHeader();
         void SetChannels(int num);
 
-        static inline const int HEADER_SIZE = 44;
-        static inline const short BITS_PER_SAMPLE = 16;
-        private:
-            int channels = 2;
-            int SAMPLE_RATE = 48000;
-            std::ofstream writer;
+        static inline int const HEADER_SIZE = 44;
+        static inline short const BITS_PER_SAMPLE = 16;
+
+       private:
+        int channels = 2;
+        int SAMPLE_RATE = 48000;
+        std::ofstream writer;
     };
 }
 
 DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour,
-
     DECLARE_DEFAULT_CTOR();
 
-    DECLARE_INSTANCE_METHOD(void, OnAudioFilterRead, Array<float>* data, int audioChannels);
+    DECLARE_INSTANCE_METHOD(void, OnAudioFilterRead, ArrayW<float> data, int audioChannels);
     DECLARE_INSTANCE_METHOD(void, OnDestroy);
 
-    public:
-        void OpenFile(const std::string& filename);
+   public:
+    void OpenFile(std::string const& filename);
 
-        void Save();
+    void Save();
 
-        bool IsRendering() const {
-            return Rendering;
-        }
+    bool IsRendering() const { return Rendering; }
 
-    private:
-        AudioWriter writer = {};
-        bool Rendering = false;
+   private:
+    AudioWriter writer = {};
+    bool Rendering = false;
 )

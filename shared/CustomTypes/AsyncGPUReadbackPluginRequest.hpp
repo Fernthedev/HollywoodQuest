@@ -1,12 +1,10 @@
 #pragma once
 
-#include "UnityEngine/Texture.hpp"
 #include "UnityEngine/RenderTexture.hpp"
-
+#include "UnityEngine/Texture.hpp"
 #include "custom-types/shared/macros.hpp"
 
-struct rgb24
-{
+struct rgb24 {
     uint8_t r;
     uint8_t g;
     uint8_t b;
@@ -31,14 +29,13 @@ DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2
     DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(void, Dispose);
 
-    public:
-        uint64_t frameId; // optional associated data
-        void GetRawData(rgb24*& buffer, size_t& length) const;
-        ~AsyncGPUReadbackPluginRequest();
+   public:
+    uint64_t frameId;  // optional associated data
+    void GetRawData(rgb24*& buffer, size_t& length) const;
+    ~AsyncGPUReadbackPluginRequest();
 )
 
 namespace AsyncGPUReadbackPlugin {
-
     AsyncGPUReadbackPluginRequest* Request(UnityEngine::RenderTexture* src);
 
     using GLIssuePluginEvent = function_ptr_t<void, void*, int>;

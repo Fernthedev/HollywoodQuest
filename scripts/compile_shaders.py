@@ -25,7 +25,6 @@ def shader_file(shader_name, shader_contents):
 constexpr const char* {shader_name.replace(".","_")} = {lines};
 """
 
-
 for shader_name in os.listdir(shader_folder):
     file_path = os.path.join(shader_folder, shader_name)
     print(f"Making header {shader_name}.hpp in {shader_header_folder}")
