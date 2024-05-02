@@ -4,7 +4,7 @@
   "info": {
     "name": "Hollywood",
     "id": "hollywood",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "url": "https://github.com/Fernthedev/HollywoodQuest",
     "additionalData": {
       "overrideSoName": "libhollywood.so"

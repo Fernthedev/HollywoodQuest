@@ -6,7 +6,7 @@
     "info": {
       "name": "Hollywood",
       "id": "hollywood",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "url": "https://github.com/Fernthedev/HollywoodQuest",
       "additionalData": {
         "overrideSoName": "libhollywood.so"
@@ -15,7 +15,7 @@
     "workspace": {
       "scripts": {
         "build": [
-          "pwsh ./scripts/build.ps1"
+          "pwsh ./scripts/build.ps1 $0?"
         ],
         "copy": [
           "pwsh ./scripts/copy.ps1 $0:?",
@@ -25,7 +25,7 @@
           "pwsh ./scripts/start-logging.ps1 $0:"
         ],
         "qmod": [
-          "pwsh ./scripts/build.ps1",
+          "pwsh ./scripts/build.ps1 $0?",
           "pwsh ./scripts/createqmod.ps1"
         ],
         "restart": [
@@ -100,12 +100,13 @@
     {
       "dependency": {
         "id": "libil2cpp",
-        "versionRange": "=0.3.1",
+        "versionRange": "=0.3.2",
         "additionalData": {
-          "headersOnly": true
+          "headersOnly": true,
+          "cmake": false
         }
       },
-      "version": "0.3.1"
+      "version": "0.3.2"
     },
     {
       "dependency": {

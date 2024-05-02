@@ -64,6 +64,9 @@ foreach ($lib in $modJson.libraryFiles) {
         $path = "./extern/libs/" + $lib
     }
     if (-not (Test-Path $path)) {
+        $path = "./ffmpeg/" + $lib
+    }
+    if (-not (Test-Path $path)) {
         Write-Output "Error: could not find dependency: $path"
         exit 1
     }
