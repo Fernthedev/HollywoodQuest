@@ -46,11 +46,6 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-if ($clean -eq $true) {
-    & $PSScriptRoot/push-bsml.ps1 -clear
-}
-& $PSScriptRoot/push-bsml.ps1
-
 & $PSScriptRoot/validate-modjson.ps1
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE

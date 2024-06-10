@@ -46,7 +46,7 @@ void checkCompileErrors(unsigned int shader, char const* name) {
         // Exit with failure.
         glDeleteShader(shader);  // Don't leak the shader.
         std::string s = std::string(errorLog.begin(), errorLog.end());
-        logger.fmtThrowError("Unable to create {} shader: {}", name, s.c_str());
+        logger.fmtThrowError("Unable to create {} shader: {}", name, s);
     }
 }
 
