@@ -27,7 +27,5 @@ if (($clean.IsPresent) -or (-not (Test-Path -Path "build"))) {
     New-Item -Path build -ItemType Directory
 }
 
-& python3 $PSScriptRoot/compile_shaders.py
-
 & cmake -G "Ninja" -DCMAKE_BUILD_TYPE="RelWithDebInfo" -B build
 & cmake --build ./build

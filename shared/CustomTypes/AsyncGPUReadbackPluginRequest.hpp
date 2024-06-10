@@ -4,15 +4,12 @@
 #include "UnityEngine/Texture.hpp"
 #include "custom-types/shared/macros.hpp"
 
-struct rgb24 {
+struct rgba {
     uint8_t r;
     uint8_t g;
     uint8_t b;
+    uint8_t a;
 };
-
-constexpr static size_t calculateFrameSize(uint32_t width, uint32_t height) {
-    return sizeof(rgb24) * width * height;
-}
 
 DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2CppObject,
     DECLARE_INSTANCE_FIELD(bool, disposed);
@@ -20,7 +17,7 @@ DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2
     DECLARE_INSTANCE_FIELD(bool, tempTexture);
     DECLARE_INSTANCE_FIELD(UnityEngine::RenderTexture*, texture);
 
-    DECLARE_CTOR(ctor, UnityEngine::RenderTexture* src);
+    DECLARE_CTOR(ctor, UnityEngine::RenderTexture* src, int width, int height);
     DECLARE_SIMPLE_DTOR();
 
     DECLARE_INSTANCE_METHOD(bool, IsDone);
@@ -31,12 +28,12 @@ DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2
 
    public:
     uint64_t frameId;  // optional associated data
-    void GetRawData(rgb24*& buffer, size_t& length) const;
+    void GetRawData(rgba*& buffer, size_t& length) const;
     ~AsyncGPUReadbackPluginRequest();
 )
 
 namespace AsyncGPUReadbackPlugin {
-    AsyncGPUReadbackPluginRequest* Request(UnityEngine::RenderTexture* src);
+    AsyncGPUReadbackPluginRequest* Request(UnityEngine::RenderTexture* src, int width, int height);
 
     using GLIssuePluginEvent = function_ptr_t<void, void*, int>;
 

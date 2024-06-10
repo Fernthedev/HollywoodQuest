@@ -91,7 +91,7 @@ void MediaCodecEncoder::Finish() {
     f = nullptr;
 }
 
-void MediaCodecEncoder::queueFrame(rgb24* queuedFrame) {
+void MediaCodecEncoder::queueFrame(rgba* queuedFrame) {
     if (!initialized)
         return;
 
@@ -129,11 +129,10 @@ void MediaCodecEncoder::queueFrame(rgb24* queuedFrame) {
     int y, u, v;
     int index = 0;
 
-    int rgbIndex = 0;
-
-    for (int j = 0; j < height; j++) {
+    // flip vertically and convert to yuv
+    for (int j = height - 1; j >= 0; j--) {
         for (int i = 0; i < width; i++) {
-            auto rgb = queuedFrame[rgbIndex++];
+            auto rgb = queuedFrame[j * width + i];
 
             y = ((66 * rgb.r + 129 * rgb.g + 25 * rgb.b + 128) >> 8) + 16;
             u = ((-38 * rgb.r - 74 * rgb.g + 112 * rgb.b + 128) >> 8) + 128;

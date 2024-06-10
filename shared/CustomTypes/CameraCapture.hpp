@@ -66,12 +66,12 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
     DECLARE_CTOR(ctor);
     DECLARE_SIMPLE_DTOR();
 
+    DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(void, OnDestroy);
 
     DECLARE_INSTANCE_METHOD(void, MakeRequest, UnityEngine::RenderTexture* target);
 
     DECLARE_INSTANCE_METHOD(void, SleepFrametime);
 
-    DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(bool, HandleFrame, AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req);
 )

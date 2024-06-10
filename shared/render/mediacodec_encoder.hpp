@@ -20,7 +20,7 @@ class MediaCodecEncoder : public Hollywood::AbstractVideoEncoder {
 
     void Init() override;
 
-    void queueFrame(rgb24* queuedFrame) override;
+    void queueFrame(rgba* queuedFrame) override;
 
     void Finish();
 
