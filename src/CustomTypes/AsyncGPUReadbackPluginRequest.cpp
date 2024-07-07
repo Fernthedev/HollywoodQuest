@@ -304,21 +304,9 @@ GLIssuePluginEvent AsyncGPUReadbackPlugin::GetGLIssuePluginEvent() {
 
 DEFINE_TYPE(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest);
 
-#include "System/IntPtr.hpp"
-
-void* GetNativeTexturePtr(UnityEngine::RenderTexture* tex) {
-    static auto* ___internal_method = THROW_UNLESS((il2cpp_utils::FindMethod(
-        il2cpp_utils::il2cpp_type_check::il2cpp_no_arg_class<UnityEngine::Texture*>::get(),
-        "GetNativeTexturePtr",
-        std::span<Il2CppClass const* const, 0>(),
-        std::span<Il2CppType const* const, 0>()
-    )));
-    return cordl_internals::RunMethodRethrow<System::IntPtr, false>(tex, ___internal_method).m_value;
-}
-
 void AsyncGPUReadbackPluginRequest::ctor(UnityEngine::RenderTexture* src, int width, int height) {
     disposed = false;
-    GLuint textureId = (uintptr_t) GetNativeTexturePtr(src);
+    GLuint textureId = (uintptr_t) src->GetNativeTexturePtr().m_value.convert();
 
     eventId = makeRequest_mainThread(textureId, width, height);
     GetGLIssuePluginEvent()(reinterpret_cast<void*>(makeRequest_renderThread), eventId);
