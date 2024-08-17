@@ -132,7 +132,7 @@ void MediaCodecEncoder::queueFrame(FramePool::Reference const& queuedFrame) {
     // flip vertically and convert to yuv
     for (int j = height - 1; j >= 0; j--) {
         for (int i = 0; i < width; i++) {
-            auto rgb = queuedFrame->get()->data.frame[j * width + i];
+            auto rgb = queuedFrame->get()->data[j * width + i];
 
             y = ((66 * rgb.r + 129 * rgb.g + 25 * rgb.b + 128) >> 8) + 16;
             u = ((-38 * rgb.r - 74 * rgb.g + 112 * rgb.b + 128) >> 8) + 128;

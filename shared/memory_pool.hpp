@@ -66,7 +66,8 @@ struct MemoryPool {
    private:
     template <typename... TArgs>
     constexpr Handle makeHandle(TArgs&&... args) {
-        return std::make_shared<MemoryPoolHandle<T>>(std::forward<TArgs>(args)...);
+        // std::default_delete for array handling
+        return std::make_shared<MemoryPoolHandle<T>>(std::forward<TArgs>(args)..., std::default_delete<T>());
     }
     constexpr Reference makeReference(Handle const& handle) { return std::shared_ptr<Handle>(new Handle(handle), &MemoryPool<T>::dealloc); }
 

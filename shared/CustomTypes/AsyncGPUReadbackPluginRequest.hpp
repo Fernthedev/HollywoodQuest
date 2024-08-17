@@ -14,35 +14,7 @@ struct rgba {
     uint8_t a;
 };
 
-struct RGBAFrame {
-    RGBAFrame(RGBAFrame const&) = delete;
-
-    RGBAFrame(uint32_t width, uint32_t height) {
-        frame = new rgba[width * height]();
-    }
-    rgba* frame;
-
-    RGBAFrame(RGBAFrame&& o) {
-        this->frame = o.frame;
-        o.frame = nullptr;
-    };
-
-    RGBAFrame& operator =(RGBAFrame&& o) {
-        this->frame = o.frame;
-        o.frame = nullptr;
-        return *this;
-    }
-
-
-    ~RGBAFrame() {
-        if (!frame) {
-            return;
-        }
-        
-        delete frame;
-    }
-};
-
+using RGBAFrame = rgba[];
 using FramePool = Hollywood::MemoryPool<RGBAFrame>;
 
 DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2CppObject,

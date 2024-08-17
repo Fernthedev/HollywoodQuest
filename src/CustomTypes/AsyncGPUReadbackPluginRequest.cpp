@@ -123,7 +123,7 @@ extern "C" int makeRequest_mainThread(GLuint texture, int width, int height, Fra
     task->width = width;
     task->height = height;
     task->frameRef = reference;
-    task->data = reference->get()->data.frame;
+    task->data = reference->get()->data;
     int event_id = next_event_id++;
 
     // Save it (lock because possible vector resize)
@@ -348,7 +348,7 @@ AsyncGPUReadbackPluginRequest* AsyncGPUReadbackPlugin::Request(UnityEngine::Rend
     request->disposed = false;
     GLuint textureId = (uintptr_t) src->GetNativeTexturePtr().m_value.convert();
 
-    request->frameReference = framePool.alloc(RGBAFrame(width, height));
+    request->frameReference = framePool.alloc(width * height);
 
     request->eventId = makeRequest_mainThread(textureId, width, height, request->frameReference);
     GetGLIssuePluginEvent()(reinterpret_cast<void*>(makeRequest_renderThread), request->eventId);
