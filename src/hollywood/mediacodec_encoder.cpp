@@ -91,7 +91,7 @@ void MediaCodecEncoder::Finish() {
     f = nullptr;
 }
 
-void MediaCodecEncoder::queueFrame(rgba* queuedFrame) {
+void MediaCodecEncoder::queueFrame(FramePool::Reference const& queuedFrame) {
     if (!initialized)
         return;
 
@@ -132,7 +132,7 @@ void MediaCodecEncoder::queueFrame(rgba* queuedFrame) {
     // flip vertically and convert to yuv
     for (int j = height - 1; j >= 0; j--) {
         for (int i = 0; i < width; i++) {
-            auto rgb = queuedFrame[j * width + i];
+            auto rgb = queuedFrame->get()->data.frame[j * width + i];
 
             y = ((66 * rgb.r + 129 * rgb.g + 25 * rgb.b + 128) >> 8) + 16;
             u = ((-38 * rgb.r - 74 * rgb.g + 112 * rgb.b + 128) >> 8) + 128;
@@ -148,7 +148,7 @@ void MediaCodecEncoder::queueFrame(rgba* queuedFrame) {
         }
     }
 
-    free(queuedFrame);
+    // free(queuedFrame);
 
     // Send the specified buffer to the codec for processing.
     // int64_t presentationTimeNs = timestamp;

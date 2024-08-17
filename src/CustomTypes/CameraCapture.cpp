@@ -96,7 +96,7 @@ void CameraCapture::OnDestroy() {
 }
 
 void CameraCapture::MakeRequest(UnityEngine::RenderTexture* target) {
-    auto request = AsyncGPUReadbackPlugin::Request(target, this->recordingSettings.width, this->recordingSettings.height);
+    auto request = AsyncGPUReadbackPlugin::Request(target, this->recordingSettings.width, this->recordingSettings.height, this->framePool);
     request->frameId = getCurrentFrameId();
     requests.push_back(request);
 }
@@ -133,11 +133,12 @@ bool CameraCapture::HandleFrame(AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRe
             req->Dispose();
             remove = true;
         } else if (req->IsDone()) {
-            size_t length;
-            rgba* buffer;
-            req->GetRawData(buffer, length);
+            // size_t length;
+            // rgba* buffer;
+            // req->GetRawData(buffer, length);
 
-            capture->queueFrame(buffer);
+
+            capture->queueFrame(req->frameReference);
 
             req->Dispose();
             remove = true;
