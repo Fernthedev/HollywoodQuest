@@ -56,7 +56,9 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
    private:
     std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
     std::chrono::steady_clock::time_point startTime;
-    FramePool framePool;
+
+    // late init
+    std::unique_ptr<FramePool> framePool;
 
     uint64_t getCurrentFrameId() const;
 

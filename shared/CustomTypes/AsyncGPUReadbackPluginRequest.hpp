@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
+#include <vector>
 #include "UnityEngine/RenderTexture.hpp"
 #include "UnityEngine/Texture.hpp"
 #include "custom-types/shared/macros.hpp"
 
-#include "memory_pool.hpp"
 
 struct rgba {
     uint8_t r;
@@ -14,8 +15,68 @@ struct rgba {
     uint8_t a;
 };
 
-using RGBAFrame = rgba[];
-using FramePool = Hollywood::MemoryPool<RGBAFrame>;
+struct RGBAFrameData {
+    rgba* frameData;
+
+    RGBAFrameData(RGBAFrameData const&) = delete;
+    RGBAFrameData(RGBAFrameData&&) = delete;
+    RGBAFrameData() = delete;
+
+    RGBAFrameData(uint32_t width, uint32_t height) { frameData = new rgba[width * height](); }
+
+    ~RGBAFrameData() { delete[] frameData; }
+
+    void lock() {
+        locked = true;
+    }
+
+    void unlock() { locked = false; }
+
+    [[nodiscard]] bool isLocked() const {
+        return locked;
+    }
+
+   private:
+        bool locked = false;
+
+};
+
+/// Allocates frames over time
+/// reuses them
+struct FramePool {
+    FramePool(FramePool const&) = delete;
+    FramePool(uint32_t width, uint32_t height, uint32_t initSize = 0) : width(width), height(height), frames(initSize, makeFrame()) {
+
+    }
+
+    using Frame = std::shared_ptr<RGBAFrameData>;
+
+    uint32_t width;
+    uint32_t height;
+    std::vector<Frame> frames;
+
+    Frame getFrame() {
+        for (auto& frame : frames) {
+            if (frame->isLocked()) {
+                continue;
+            }
+
+            frame->lock();
+            return frame;
+        }
+
+        auto frame = frames.emplace_back(makeFrame());
+        frame->lock();
+        return frame;
+    }
+
+    private:
+    std::shared_ptr<RGBAFrameData> makeFrame() {
+        return std::make_shared<RGBAFrameData>(width, height);
+    } 
+};
+
+
 
 DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2CppObject,
     DECLARE_INSTANCE_FIELD(bool, disposed);
@@ -34,7 +95,7 @@ DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2
 
    public:
     uint64_t frameId;  // optional associated data
-    FramePool::Reference frameReference;  // handle frame ref
+    FramePool::Frame frameReference;  // handle frame ref
     void GetRawData(rgba*& buffer, size_t& length) const;
     ~AsyncGPUReadbackPluginRequest();
 )

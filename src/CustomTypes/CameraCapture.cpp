@@ -1,5 +1,7 @@
 #include "CustomTypes/CameraCapture.hpp"
+#include <memory>
 
+#include "CustomTypes/AsyncGPUReadbackPluginRequest.hpp"
 #include "UnityEngine/Camera.hpp"
 #include "UnityEngine/CameraClearFlags.hpp"
 #include "UnityEngine/Color.hpp"
@@ -25,6 +27,8 @@ DEFINE_TYPE(Hollywood, CameraCapture);
 void CameraCapture::Init(CameraRecordingSettings const& settings) {
     capture = std::make_unique<MediaCodecEncoder>(settings.width, settings.height, settings.fps, settings.bitrate, settings.filePath);
 
+    framePool = std::make_unique<FramePool>(settings.width, settings.height);
+    
     capture->Init();
     this->recordingSettings = settings;
     startTime = std::chrono::high_resolution_clock::now();
@@ -96,7 +100,7 @@ void CameraCapture::OnDestroy() {
 }
 
 void CameraCapture::MakeRequest(UnityEngine::RenderTexture* target) {
-    auto request = AsyncGPUReadbackPlugin::Request(target, this->recordingSettings.width, this->recordingSettings.height, this->framePool);
+    auto request = AsyncGPUReadbackPlugin::Request(target, this->recordingSettings.width, this->recordingSettings.height, *this->framePool);
     request->frameId = getCurrentFrameId();
     requests.push_back(request);
 }

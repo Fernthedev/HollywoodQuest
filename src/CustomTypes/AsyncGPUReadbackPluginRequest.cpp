@@ -106,7 +106,7 @@ struct Task {
     bool done = false;
     rgba* data;
     // keep alive
-    FramePool::Reference frameRef;
+    FramePool::Frame frameRef;
     size_t size;
     int height;
     int width;
@@ -116,14 +116,14 @@ static std::unordered_map<int, std::shared_ptr<Task>> tasks;
 static std::shared_mutex tasks_mutex;
 static int next_event_id = 1;
 
-extern "C" int makeRequest_mainThread(GLuint texture, int width, int height, FramePool::Reference const& reference) {
+extern "C" int makeRequest_mainThread(GLuint texture, int width, int height, FramePool::Frame const& reference) {
     // Create the task
     std::shared_ptr<Task> task = std::make_shared<Task>();
     task->origTexture = texture;
     task->width = width;
     task->height = height;
     task->frameRef = reference;
-    task->data = reference->get()->data;
+    task->data = reference->frameData;
     int event_id = next_event_id++;
 
     // Save it (lock because possible vector resize)
@@ -348,7 +348,7 @@ AsyncGPUReadbackPluginRequest* AsyncGPUReadbackPlugin::Request(UnityEngine::Rend
     request->disposed = false;
     GLuint textureId = (uintptr_t) src->GetNativeTexturePtr().m_value.convert();
 
-    request->frameReference = framePool.alloc(width * height);
+    request->frameReference = framePool.getFrame();
 
     request->eventId = makeRequest_mainThread(textureId, width, height, request->frameReference);
     GetGLIssuePluginEvent()(reinterpret_cast<void*>(makeRequest_renderThread), request->eventId);
