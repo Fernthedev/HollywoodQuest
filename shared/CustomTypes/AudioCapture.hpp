@@ -31,6 +31,7 @@ namespace Hollywood {
 DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour,
     DECLARE_DEFAULT_CTOR();
 
+    DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(void, OnAudioFilterRead, ArrayW<float> data, int audioChannels);
     DECLARE_INSTANCE_METHOD(void, OnDestroy);
 
@@ -39,9 +40,9 @@ DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour,
 
     void Save();
 
-    bool IsRendering() const { return Rendering; }
+    bool IsRendering() const { return rendering; }
 
    private:
     AudioWriter writer = {};
-    bool Rendering = false;
+    bool rendering = false;
 )

@@ -3,6 +3,7 @@
 #include "CustomTypes/AudioCapture.hpp"
 #include "CustomTypes/CameraCapture.hpp"
 #include "UnityEngine/AudioListener.hpp"
+#include "UnityEngine/AudioSettings.hpp"
 #include "UnityEngine/AudioSource.hpp"
 #include "UnityEngine/Camera.hpp"
 #include "UnityEngine/FilterMode.hpp"
@@ -14,7 +15,9 @@
 #include "UnityEngine/RenderTextureReadWrite.hpp"
 #include "UnityEngine/StereoTargetEyeMask.hpp"
 #include "UnityEngine/TextureWrapMode.hpp"
+#include "UnityEngine/Time.hpp"
 #include "UnityEngine/Vector3.hpp"
+#include "beatsaber-hook/shared/utils/hooking.hpp"
 #include "beatsaber-hook/shared/utils/il2cpp-functions.hpp"
 #include "custom-types/shared/register.hpp"
 #include "main.hpp"
@@ -39,6 +42,54 @@ inline UnityEngine::Matrix4x4 MatrixTranslate(UnityEngine::Vector3 const& vector
     result.m32 = 0;
     result.m33 = 1;
     return result;
+}
+
+MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
+
+    if (!syncTimes)
+        return fmod_output_mix(output, p1, p2);
+
+    char* system = *(char**) (output + 0x60);
+    long dspClock = *(long*) (system + 0xc78);
+
+    while (syncTimes) {
+        long dspDelta = dspClock - startDspClock;
+        float gameDelta = currentGameTime - startGameTime;
+        long gameDeltaInSamples = gameDelta * sampleRate;
+        // game time has pulled ahead, allow audio to run
+        if (dspDelta < gameDeltaInSamples)
+            break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    return fmod_output_mix(output, p1, p2);
+}
+
+void LazyInit() {
+    static bool initialized = false;
+    if (initialized)
+        return;
+
+    logger.info("Installing audio mix hook...");
+    uintptr_t libunity = baseAddr("libunity.so");
+    uintptr_t fmod_output_mix_addr = findPattern(
+        libunity, "ff 43 03 d1 a8 04 80 52 ed 33 04 6d eb 2b 05 6d e9 23 06 6d fc 6f 07 a9 fa 67 08 a9 f8 5f 09 a9 f6 57 0a a9 f4 4f", 0x2000000
+    );
+    logger.info("Found audio mix address: {}", fmod_output_mix_addr);
+    INSTALL_HOOK_DIRECT(logger, fmod_output_mix, (void*) fmod_output_mix_addr);
+    logger.info("Installed audio mix hook!");
+
+    initialized = true;
+}
+
+void Hollywood::SetSyncTimes(bool value) {
+    LazyInit();
+    if (value) {
+        sampleRate = UnityEngine::AudioSettings::get_outputSampleRate();
+        startGameTime = currentGameTime = UnityEngine::Time::get_time();
+        startDspClock = UnityEngine::AudioSettings::get_dspTime() * sampleRate;
+    }
+    syncTimes = value;
 }
 
 Hollywood::CameraCapture* Hollywood::SetCameraCapture(UnityEngine::Camera* camera, CameraRecordingSettings const& recordingSettings) {
@@ -76,6 +127,7 @@ Hollywood::CameraCapture* Hollywood::SetCameraCapture(UnityEngine::Camera* camer
     UnityEngine::Object::DontDestroyOnLoad(texture);
     auto cameraCapture = camera->gameObject->AddComponent<Hollywood::CameraCapture*>();
     cameraCapture->readOnlyTexture = texture;
+    cameraCapture->recordingSettings = recordingSettings;
     camera->targetTexture = texture;
     camera->aspect = float(recordingSettings.width) / float(recordingSettings.height);
 

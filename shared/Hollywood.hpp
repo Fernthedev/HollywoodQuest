@@ -10,7 +10,7 @@ namespace UnityEngine {
 }
 
 namespace Hollywood {
-    struct CameraRecordingSettings;
+    void SetSyncTimes(bool value);
 
     Hollywood::CameraCapture* SetCameraCapture(UnityEngine::Camera* camera, CameraRecordingSettings const& recordingSettings);
     Hollywood::AudioCapture* SetAudioCapture(UnityEngine::AudioListener* listener);

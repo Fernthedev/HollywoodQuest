@@ -153,7 +153,7 @@ extern "C" void makeRequest_renderThread(int event_id) {
     task->size = sizeof(rgba) * task->width * task->height;
 
     if (task->size == 0) {
-        logger.debug("request size error {} {}", task->width, task->height);
+        logger.warn("request size error {} {}", task->width, task->height);
         task->error = true;
         return;
     }
@@ -220,7 +220,7 @@ extern "C" void update_renderThread(int event_id) {
     GLsizei length = 0;
     glGetSynciv(task->fence, GL_SYNC_STATUS, sizeof(GLint), &length, &status);
     if (length <= 0) {
-        logger.debug("request error on update");
+        logger.warn("request error on update");
         task->error = true;
         task->done = true;
         return;

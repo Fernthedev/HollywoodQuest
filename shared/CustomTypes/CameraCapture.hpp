@@ -33,13 +33,11 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
     // The texture to read
     DECLARE_INSTANCE_FIELD(UnityEngine::RenderTexture*, readOnlyTexture);
 
-    void Init(CameraRecordingSettings const& settings);
-
-    CameraRecordingSettings const& getRecordingSettings() const { return recordingSettings; }
-
     /// Max frames allowed in the render queue
     int maxFramesAllowedInQueue = 5;
     int maxRequestsAllowedInQueue = 10;
+
+    CameraRecordingSettings recordingSettings;
 
     /// If true, it is allowed to make requests to render frames
     /// If false, it will not make requests but will continue processing remaining requests
@@ -53,21 +51,10 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
     /// Returns amount of frames remaining to be rendered
     DECLARE_INSTANCE_METHOD(int, remainingFramesToRender);
 
-   private:
-    std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
-    std::chrono::steady_clock::time_point startTime;
-
-    // late init
-    std::unique_ptr<FramePool> framePool;
-
-    uint64_t getCurrentFrameId() const;
-
-    CameraRecordingSettings recordingSettings;
-
-    RequestList requests;
-
-    DECLARE_CTOR(ctor);
+    DECLARE_DEFAULT_CTOR();
     DECLARE_SIMPLE_DTOR();
+
+    DECLARE_INSTANCE_METHOD(void, Init);
 
     DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(void, OnDestroy);
@@ -77,4 +64,15 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
     DECLARE_INSTANCE_METHOD(void, SleepFrametime);
 
     DECLARE_INSTANCE_METHOD(bool, HandleFrame, AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req);
+
+   private:
+    uint64_t getCurrentFrameId() const;
+
+    std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
+    std::chrono::steady_clock::time_point startTime;
+
+    // late init
+    std::unique_ptr<FramePool> framePool;
+
+    RequestList requests = RequestList();
 )

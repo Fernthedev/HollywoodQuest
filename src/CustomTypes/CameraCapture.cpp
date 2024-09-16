@@ -1,6 +1,7 @@
 #include "CustomTypes/CameraCapture.hpp"
 
 #include "CustomTypes/AsyncGPUReadbackPluginRequest.hpp"
+#include "UnityEngine/AudioSettings.hpp"
 #include "UnityEngine/Camera.hpp"
 #include "UnityEngine/CameraClearFlags.hpp"
 #include "UnityEngine/Color.hpp"
@@ -23,14 +24,19 @@ using namespace UnityEngine;
 
 DEFINE_TYPE(Hollywood, CameraCapture);
 
-void CameraCapture::Init(CameraRecordingSettings const& settings) {
-    capture = std::make_unique<MediaCodecEncoder>(settings.width, settings.height, settings.fps, settings.bitrate, settings.filePath);
+void CameraCapture::Init() {
+    logger.info("Making video capture");
 
+    auto& settings = this->recordingSettings;
+    capture = std::make_unique<MediaCodecEncoder>(settings.width, settings.height, settings.fps, settings.bitrate, settings.filePath);
     framePool = std::make_unique<FramePool>(settings.width, settings.height);
 
     capture->Init();
-    this->recordingSettings = settings;
     startTime = std::chrono::high_resolution_clock::now();
+
+    sampleRate = UnityEngine::AudioSettings::get_outputSampleRate();
+    startGameTime = currentGameTime = UnityEngine::Time::get_time();
+    startDspClock = UnityEngine::AudioSettings::get_dspTime() * sampleRate;
 }
 
 int CameraCapture::remainingReadRequests() {
@@ -49,12 +55,6 @@ uint64_t CameraCapture::getCurrentFrameId() const {
            std::chrono::milliseconds((uint64_t) std::round(1.0 / capture->getFpsRate() * 1000));
 }
 
-void CameraCapture::ctor() {
-    INVOKE_CTOR();
-    requests = RequestList();
-    logger.info("Making video capture");
-}
-
 // https://github.com/Alabate/AsyncGPUReadbackPlugin/blob/e8d5e52a9adba24bc0f652c39076404e4671e367/UnityExampleProject/Assets/Scripts/UsePlugin.cs#L13
 void CameraCapture::Update() {
     // try to process all requests
@@ -63,6 +63,18 @@ void CameraCapture::Update() {
 
     if (!capture->isInitialized() || !readOnlyTexture || !readOnlyTexture->m_CachedPtr.m_value)
         return;
+
+    while (syncTimes) {
+        currentGameTime = UnityEngine::Time::get_time();
+        long dspClock = UnityEngine::AudioSettings::get_dspTime() * sampleRate;
+        long dspDelta = dspClock - startDspClock;
+        float gameDelta = currentGameTime - startGameTime;
+        long gameDeltaInSamples = gameDelta * sampleRate;
+        if (gameDeltaInSamples < dspDelta + (sampleRate * 0.1))
+            break;
+        // game time is too far ahead, pause for audio
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
 
     if (makeRequests)
         MakeRequest(readOnlyTexture);

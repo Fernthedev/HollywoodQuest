@@ -1,6 +1,7 @@
 #include "CustomTypes/AudioCapture.hpp"
 
 #include "UnityEngine/AudioSettings.hpp"
+#include "UnityEngine/Time.hpp"
 #include "main.hpp"
 
 using namespace Hollywood;
@@ -87,25 +88,31 @@ void AudioWriter::SetChannels(int num) {
 }
 
 void AudioCapture::OpenFile(std::string const& filename) {
-    Rendering = true;
+    rendering = true;
     writer.OpenFile(filename);
+
+    sampleRate = UnityEngine::AudioSettings::get_outputSampleRate();
+    startGameTime = currentGameTime = UnityEngine::Time::get_time();
+    startDspClock = UnityEngine::AudioSettings::get_dspTime() * sampleRate;
 }
 
 void AudioCapture::Save() {
-    Rendering = false;
+    rendering = false;
     logger.info("Closing audio file and adding header");
     writer.AddHeader();
 }
 
+void AudioCapture::Update() {
+    currentGameTime = UnityEngine::Time::get_time();
+}
+
 void AudioCapture::OnAudioFilterRead(ArrayW<float> data, int audioChannels) {
-    // logger.info("Got data");
-    if (Rendering) {
-        // store the number of channels we are rendering
-        if (audioChannels > 0)
-            writer.SetChannels(audioChannels);
-        // store the data stream
-        writer.Write(data);
-    }
+    if (!rendering)
+        return;
+
+    if (audioChannels > 0)
+        writer.SetChannels(audioChannels);
+    writer.Write(data);
 }
 
 void AudioCapture::OnDestroy() {
