@@ -38,8 +38,8 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
     CameraRecordingSettings const& getRecordingSettings() const { return recordingSettings; }
 
     /// Max frames allowed in the render queue
-    uint32_t maxFramesAllowedInQueue = 10;
-    uint32_t maxRequestsAllowedInQueue = 10;
+    int maxFramesAllowedInQueue = 5;
+    int maxRequestsAllowedInQueue = 10;
 
     /// If true, it is allowed to make requests to render frames
     /// If false, it will not make requests but will continue processing remaining requests
@@ -56,6 +56,9 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
    private:
     std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
     std::chrono::steady_clock::time_point startTime;
+
+    // late init
+    std::unique_ptr<FramePool> framePool;
 
     uint64_t getCurrentFrameId() const;
 

@@ -105,6 +105,8 @@ struct Task {
     bool error = false;
     bool done = false;
     rgba* data;
+    // keep alive
+    FramePool::Frame frameRef;
     size_t size;
     int height;
     int width;
@@ -114,12 +116,14 @@ static std::unordered_map<int, std::shared_ptr<Task>> tasks;
 static std::shared_mutex tasks_mutex;
 static int next_event_id = 1;
 
-extern "C" int makeRequest_mainThread(GLuint texture, int width, int height) {
+extern "C" int makeRequest_mainThread(GLuint texture, int width, int height, FramePool::Frame const& reference) {
     // Create the task
     std::shared_ptr<Task> task = std::make_shared<Task>();
     task->origTexture = texture;
     task->width = width;
     task->height = height;
+    task->frameRef = reference;
+    task->data = reference->frameData;
     int event_id = next_event_id++;
 
     // Save it (lock because possible vector resize)
@@ -157,7 +161,7 @@ extern "C" void makeRequest_renderThread(int event_id) {
     // Start the read request
 
     // Allocate the final data buffer !!! WARNING: free, will have to be done on script side !!!!
-    task->data = static_cast<rgba*>(std::malloc(task->size));
+    // task->data = static_cast<rgba*>(std::malloc(task->size));
 
     // Create the fbo (frame buffer object) from the given texture
     glGenFramebuffers(1, &task->fbo);
@@ -304,14 +308,6 @@ GLIssuePluginEvent AsyncGPUReadbackPlugin::GetGLIssuePluginEvent() {
 
 DEFINE_TYPE(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest);
 
-void AsyncGPUReadbackPluginRequest::ctor(UnityEngine::RenderTexture* src, int width, int height) {
-    disposed = false;
-    GLuint textureId = (uintptr_t) src->GetNativeTexturePtr().m_value.convert();
-
-    eventId = makeRequest_mainThread(textureId, width, height);
-    GetGLIssuePluginEvent()(reinterpret_cast<void*>(makeRequest_renderThread), eventId);
-}
-
 bool AsyncGPUReadbackPluginRequest::IsDone() {
     return isRequestDone(eventId);
 }
@@ -327,14 +323,10 @@ void AsyncGPUReadbackPluginRequest::Update() {
 void AsyncGPUReadbackPluginRequest::Dispose() {
     if (!disposed) {
         dispose(eventId);
-        if (tempTexture && texture) {
-            // logger.debug("freeing {}", fmt::ptr(this->texture));
+        if (tempTexture && texture)
             UnityEngine::RenderTexture::ReleaseTemporary(texture);
-        }
         disposed = true;
     }
-    // Comment if using the same texture
-    //    UnityEngine::RenderTexture::ReleaseTemporary((UnityEngine::RenderTexture*)texture);
 }
 
 AsyncGPUReadbackPluginRequest::~AsyncGPUReadbackPluginRequest() {
@@ -345,7 +337,16 @@ void AsyncGPUReadbackPluginRequest::GetRawData(rgba*& buffer, size_t& length) co
     getData_mainThread(eventId, buffer, length);
 }
 
-AsyncGPUReadbackPluginRequest* AsyncGPUReadbackPlugin::Request(UnityEngine::RenderTexture* src, int width, int height) {
-    return il2cpp_utils::New<AsyncGPUReadbackPluginRequest*>(src, width, height).value();
+AsyncGPUReadbackPluginRequest* AsyncGPUReadbackPlugin::Request(UnityEngine::RenderTexture* src, int width, int height, FramePool& framePool) {
+    auto request = CRASH_UNLESS(il2cpp_utils::New<AsyncGPUReadbackPluginRequest*>());
+    request->disposed = false;
+    GLuint textureId = (uintptr_t) src->GetNativeTexturePtr().m_value.convert();
+
+    request->frameReference = framePool.getFrame();
+
+    request->eventId = makeRequest_mainThread(textureId, width, height, request->frameReference);
+    GetGLIssuePluginEvent()(reinterpret_cast<void*>(makeRequest_renderThread), request->eventId);
+
+    return request;
 }
 #pragma endregion

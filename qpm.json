@@ -36,7 +36,11 @@
         "pwsh ./scripts/pull-tombstone.ps1 -analyze"
       ]
     },
-    "qmodIncludeDirs": [],
+    "qmodIncludeDirs": [
+      "./build",
+      "./extern/libs",
+      "./ffmpeg"
+    ],
     "qmodIncludeFiles": [],
     "qmodOutput": null
   },
