@@ -1,5 +1,4 @@
 #include "CustomTypes/CameraCapture.hpp"
-#include <memory>
 
 #include "CustomTypes/AsyncGPUReadbackPluginRequest.hpp"
 #include "UnityEngine/Camera.hpp"
@@ -28,7 +27,7 @@ void CameraCapture::Init(CameraRecordingSettings const& settings) {
     capture = std::make_unique<MediaCodecEncoder>(settings.width, settings.height, settings.fps, settings.bitrate, settings.filePath);
 
     framePool = std::make_unique<FramePool>(settings.width, settings.height);
-    
+
     capture->Init();
     this->recordingSettings = settings;
     startTime = std::chrono::high_resolution_clock::now();
@@ -58,15 +57,11 @@ void CameraCapture::ctor() {
 
 // https://github.com/Alabate/AsyncGPUReadbackPlugin/blob/e8d5e52a9adba24bc0f652c39076404e4671e367/UnityExampleProject/Assets/Scripts/UsePlugin.cs#L13
 void CameraCapture::Update() {
-    auto it = requests.begin();
-    while (it != requests.end()) {
-        if (HandleFrame(*it))
-            it = requests.erase(it);
-        else
-            it++;
-    }
+    // try to process all requests
+    while (!requests.empty() && HandleFrame(requests.front()))
+        requests.pop_front();
 
-    if (!(capture->isInitialized() && readOnlyTexture && readOnlyTexture->m_CachedPtr.m_value))
+    if (!capture->isInitialized() || !readOnlyTexture || !readOnlyTexture->m_CachedPtr.m_value)
         return;
 
     if (makeRequests)
@@ -76,22 +71,15 @@ void CameraCapture::Update() {
 void CameraCapture::OnDestroy() {
     logger.info("Camera Capture is being destroyed, finishing the capture");
 
-    if (waitForPendingFrames) {
-        while (requests.empty()) {
-            auto it = requests.begin();
-            while (it != requests.end()) {
-                if (HandleFrame(*it))
-                    it = requests.erase(it);
-                else
-                    it++;
-            }
-            SleepFrametime();
-        }
+    // if waitForPendingFrames, process all remaining requests
+    while (waitForPendingFrames && !requests.empty() && HandleFrame(requests.front())) {
+        requests.pop_front();
+        SleepFrametime();
     }
 
-    for (auto& req : requests) {
+    for (auto& req : requests)
         req->Dispose();
-    }
+
     requests.clear();
     capture.reset();  // force delete of video capture
 
@@ -106,51 +94,33 @@ void CameraCapture::MakeRequest(UnityEngine::RenderTexture* target) {
 }
 
 void CameraCapture::SleepFrametime() {
+    std::this_thread::yield();
     // * 90 because 90%
     std::this_thread::sleep_for(std::chrono::microseconds(uint32_t(1.0f / capture->getFpsRate() * 90)));
 }
 
 bool CameraCapture::HandleFrame(AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req) {
-    bool remove = false;
-
     if (capture->isInitialized()) {
         req->Update();
 
-        // TODO: Should we lock on waiting for the request to be done? Would that cause the OpenGL thread to freeze?
-        // This doesn't freeze OpenGL. Should this still be done though?
-        while (!req->HasError() && !req->IsDone() && requests.size() >= maxRequestsAllowedInQueue) {
-            req->Update();
-            std::this_thread::yield();
-            // wait for the next frame or so
-            SleepFrametime();
+        while (!req->HasError() && !req->IsDone()) {
+            // wait for the next frame or so if we have too many requests
+            if (requests.size() >= maxRequestsAllowedInQueue) {
+                req->Update();
+                SleepFrametime();
+            } else
+                return false;
         }
 
         // This is to avoid having a frame queue so big that you run out of memory.
         if (req->IsDone() && !req->HasError() && maxFramesAllowedInQueue > 0) {
-            while (capture->approximateFramesToRender() >= maxFramesAllowedInQueue) {
-                std::this_thread::yield();
+            while (capture->approximateFramesToRender() >= maxFramesAllowedInQueue)
                 SleepFrametime();
-            }
         }
 
-        if (req->HasError()) {
-            req->Dispose();
-            remove = true;
-        } else if (req->IsDone()) {
-            // size_t length;
-            // rgba* buffer;
-            // req->GetRawData(buffer, length);
-
-
+        if (!req->HasError() && req->IsDone())
             capture->queueFrame(req->frameReference);
-
-            req->Dispose();
-            remove = true;
-        }
-    } else {
-        req->Dispose();
-        remove = true;
     }
-
-    return remove;
+    req->Dispose();
+    return true;
 }
