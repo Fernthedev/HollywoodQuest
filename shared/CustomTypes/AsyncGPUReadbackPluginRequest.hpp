@@ -3,10 +3,10 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+
 #include "UnityEngine/RenderTexture.hpp"
 #include "UnityEngine/Texture.hpp"
 #include "custom-types/shared/macros.hpp"
-
 
 struct rgba {
     uint8_t r;
@@ -26,28 +26,21 @@ struct RGBAFrameData {
 
     ~RGBAFrameData() { delete[] frameData; }
 
-    void lock() {
-        locked = true;
-    }
+    void lock() { locked = true; }
 
     void unlock() { locked = false; }
 
-    [[nodiscard]] bool isLocked() const {
-        return locked;
-    }
+    [[nodiscard]] bool isLocked() const { return locked; }
 
    private:
-        bool locked = false;
-
+    bool locked = false;
 };
 
 /// Allocates frames over time
 /// reuses them
 struct FramePool {
     FramePool(FramePool const&) = delete;
-    FramePool(uint32_t width, uint32_t height, uint32_t initSize = 0) : width(width), height(height), frames(initSize, makeFrame()) {
-
-    }
+    FramePool(uint32_t width, uint32_t height, uint32_t initSize = 0) : width(width), height(height), frames(initSize, makeFrame()) {}
 
     using Frame = std::shared_ptr<RGBAFrameData>;
 
@@ -57,9 +50,8 @@ struct FramePool {
 
     Frame getFrame() {
         for (auto& frame : frames) {
-            if (frame->isLocked()) {
+            if (frame->isLocked())
                 continue;
-            }
 
             frame->lock();
             return frame;
@@ -70,13 +62,9 @@ struct FramePool {
         return frame;
     }
 
-    private:
-    std::shared_ptr<RGBAFrameData> makeFrame() {
-        return std::make_shared<RGBAFrameData>(width, height);
-    } 
+   private:
+    std::shared_ptr<RGBAFrameData> makeFrame() { return std::make_shared<RGBAFrameData>(width, height); }
 };
-
-
 
 DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2CppObject,
     DECLARE_INSTANCE_FIELD(bool, disposed);
@@ -84,7 +72,7 @@ DECLARE_CLASS_CODEGEN(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest, Il2
     DECLARE_INSTANCE_FIELD(bool, tempTexture);
     DECLARE_INSTANCE_FIELD(UnityEngine::RenderTexture*, texture);
 
-    DECLARE_CTOR(ctor);
+    DECLARE_DEFAULT_CTOR();
     DECLARE_SIMPLE_DTOR();
 
     DECLARE_INSTANCE_METHOD(bool, IsDone);

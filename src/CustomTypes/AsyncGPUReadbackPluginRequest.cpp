@@ -308,8 +308,6 @@ GLIssuePluginEvent AsyncGPUReadbackPlugin::GetGLIssuePluginEvent() {
 
 DEFINE_TYPE(AsyncGPUReadbackPlugin, AsyncGPUReadbackPluginRequest);
 
-void AsyncGPUReadbackPluginRequest::ctor() {}
-
 bool AsyncGPUReadbackPluginRequest::IsDone() {
     return isRequestDone(eventId);
 }
@@ -325,14 +323,10 @@ void AsyncGPUReadbackPluginRequest::Update() {
 void AsyncGPUReadbackPluginRequest::Dispose() {
     if (!disposed) {
         dispose(eventId);
-        if (tempTexture && texture) {
-            // logger.debug("freeing {}", fmt::ptr(this->texture));
+        if (tempTexture && texture)
             UnityEngine::RenderTexture::ReleaseTemporary(texture);
-        }
         disposed = true;
     }
-    // Comment if using the same texture
-    //    UnityEngine::RenderTexture::ReleaseTemporary((UnityEngine::RenderTexture*)texture);
 }
 
 AsyncGPUReadbackPluginRequest::~AsyncGPUReadbackPluginRequest() {
@@ -344,7 +338,7 @@ void AsyncGPUReadbackPluginRequest::GetRawData(rgba*& buffer, size_t& length) co
 }
 
 AsyncGPUReadbackPluginRequest* AsyncGPUReadbackPlugin::Request(UnityEngine::RenderTexture* src, int width, int height, FramePool& framePool) {
-    auto request = il2cpp_utils::New<AsyncGPUReadbackPluginRequest*>(src, width, height).value();
+    auto request = CRASH_UNLESS(il2cpp_utils::New<AsyncGPUReadbackPluginRequest*>());
     request->disposed = false;
     GLuint textureId = (uintptr_t) src->GetNativeTexturePtr().m_value.convert();
 
