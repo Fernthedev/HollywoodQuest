@@ -4,7 +4,7 @@
   "info": {
     "name": "Hollywood",
     "id": "hollywood",
-    "version": "0.3.0",
+    "version": "1.0.0",
     "url": "https://github.com/Fernthedev/HollywoodQuest",
     "additionalData": {
       "overrideSoName": "libhollywood.so"
@@ -30,7 +30,7 @@
         "pwsh ./scripts/restart-game.ps1"
       ],
       "stack": [
-        "pwsh ./scripts/ndk-stack.ps1"
+        "pwsh ./scripts/ndk-stack.ps1 $0?"
       ],
       "tomb": [
         "pwsh ./scripts/pull-tombstone.ps1 -analyze"

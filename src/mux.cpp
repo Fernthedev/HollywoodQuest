@@ -134,11 +134,13 @@ namespace Muxer {
             logger.error("Output param copy: {}", av_err2str(err));
             return;
         }
-        outputVideoStream->r_frame_rate.den = 1;
-        outputVideoStream->r_frame_rate.num = fps;
-        outputVideoStream->avg_frame_rate.den = 1;
-        outputVideoStream->avg_frame_rate.num = fps;
-        outputVideoStream->codecpar->bit_rate = videoContext->streams[0]->codecpar->bit_rate;
+
+        auto inStream = videoContext->streams[0];
+        outputVideoStream->r_frame_rate.den = inStream->r_frame_rate.den;
+        outputVideoStream->r_frame_rate.num = inStream->r_frame_rate.num;
+        outputVideoStream->avg_frame_rate.den = inStream->avg_frame_rate.den;
+        outputVideoStream->avg_frame_rate.num = inStream->avg_frame_rate.num;
+        outputVideoStream->codecpar->bit_rate = inStream->codecpar->bit_rate;
         // outputVideoStream->time_base.num = 1;
         // outputVideoStream->time_base.den = 1000;
         // avcodec_parameters_to_context(outputVideoStream->codec, outputVideoStream->codecpar);

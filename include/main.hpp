@@ -10,3 +10,5 @@ extern float startGameTime;
 extern float currentGameTime;
 extern long startDspClock;
 extern int sampleRate;
+
+void IssuePluginEvent(void (*function)(int), int id);

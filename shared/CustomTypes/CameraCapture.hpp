@@ -1,78 +1,35 @@
 #pragma once
 
-#include <deque>
-#include <memory>
-#include <string>
+#include <media/NdkMediaCodec.h>
 
-#include "../render/AbstractEncoder.hpp"
-#include "AsyncGPUReadbackPluginRequest.hpp"
-#include "System/Collections/Generic/List_1.hpp"
+#include "UnityEngine/Camera.hpp"
 #include "UnityEngine/MonoBehaviour.hpp"
 #include "UnityEngine/RenderTexture.hpp"
-#include "beatsaber-hook/shared/utils/gc-alloc.hpp"
-#include "custom-types/shared/coroutine.hpp"
 #include "custom-types/shared/macros.hpp"
 
-namespace Hollywood {
-    using RequestList =
-        std::deque<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*, gc_allocator<AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest*>>;
-
-    // Default recommended settings
-    struct CameraRecordingSettings {
-        int width = 1920;
-        int height = 1080;
-        int fps = 60;
-        int bitrate = 8000;
-        float fov = 90;
-        std::string filePath = "/sdcard/video.mp4";
-    };
-}
-
 DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
-   public:
-    // The texture to read
-    DECLARE_INSTANCE_FIELD(UnityEngine::RenderTexture*, readOnlyTexture);
-
-    /// Max frames allowed in the render queue
-    int maxFramesAllowedInQueue = 5;
-    int maxRequestsAllowedInQueue = 10;
-
-    CameraRecordingSettings recordingSettings;
-
-    /// If true, it is allowed to make requests to render frames
-    /// If false, it will not make requests but will continue processing remaining requests
-    DECLARE_INSTANCE_FIELD_DEFAULT(bool, makeRequests, true);
-
-    /// If true, will process remaining frames in destructor
-    DECLARE_INSTANCE_FIELD_DEFAULT(bool, waitForPendingFrames, false);
-
-    /// Returns amount of requests remaining to be processed
-    DECLARE_INSTANCE_METHOD(int, remainingReadRequests);
-    /// Returns amount of frames remaining to be rendered
-    DECLARE_INSTANCE_METHOD(int, remainingFramesToRender);
-
     DECLARE_DEFAULT_CTOR();
-    DECLARE_SIMPLE_DTOR();
 
-    DECLARE_INSTANCE_METHOD(void, Init);
-
+    DECLARE_INSTANCE_METHOD(void, Init, int width, int height, int fps, int bitrate, float fov);
+    DECLARE_INSTANCE_METHOD(void, Stop);
     DECLARE_INSTANCE_METHOD(void, Update);
+    DECLARE_INSTANCE_METHOD(void, OnPostRender);
     DECLARE_INSTANCE_METHOD(void, OnDestroy);
 
-    DECLARE_INSTANCE_METHOD(void, MakeRequest, UnityEngine::RenderTexture* target);
+    DECLARE_INSTANCE_FIELD(UnityEngine::Camera*, camera);
+    DECLARE_INSTANCE_FIELD(UnityEngine::RenderTexture*, texture);
 
-    DECLARE_INSTANCE_METHOD(void, SleepFrametime);
-
-    DECLARE_INSTANCE_METHOD(bool, HandleFrame, AsyncGPUReadbackPlugin::AsyncGPUReadbackPluginRequest* req);
+   public:
+    std::function<void(uint8_t*, size_t)> onOutputUnit;
 
    private:
-    uint64_t getCurrentFrameId() const;
+    AMediaCodec* encoder;
+    ANativeWindow* window;
+    float fpsDelta;
+    float lastFrameTime;
 
-    std::unique_ptr<Hollywood::AbstractVideoEncoder> capture;
-    std::chrono::steady_clock::time_point startTime;
+    int dataId = -1;
 
-    // late init
-    std::unique_ptr<FramePool> framePool;
-
-    RequestList requests = RequestList();
+    bool stopThread = false;
+    std::thread thread;
 )

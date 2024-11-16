@@ -3,6 +3,9 @@ Param(
     [Switch] $clean,
 
     [Parameter(Mandatory=$false)]
+    [Switch] $glDebug,
+
+    [Parameter(Mandatory=$false)]
     [Switch] $log,
 
     [Parameter(Mandatory=$false)]
@@ -39,7 +42,7 @@ if ($help -eq $true) {
     exit
 }
 
-& $PSScriptRoot/build.ps1 -clean:$clean
+& $PSScriptRoot/build.ps1 -clean:$clean -glDebug:$glDebug
 
 if ($LASTEXITCODE -ne 0) {
     Write-Output "Failed to build, exiting..."

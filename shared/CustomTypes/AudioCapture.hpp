@@ -1,12 +1,6 @@
 #pragma once
 
-#include <algorithm>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <fstream>
-#include <iostream>
-#include <string>
 
 #include "UnityEngine/MonoBehaviour.hpp"
 #include "custom-types/shared/macros.hpp"

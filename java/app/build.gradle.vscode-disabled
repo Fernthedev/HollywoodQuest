@@ -1,0 +1,38 @@
+// this file is renamed by default because the vscode java extension doesn't support android
+// and also doesn't support manual configuration if this file is detected, regardless of java.import.gradle.enabled
+// so we just temporarily fix the name when we want to actually build the java code. amazing
+
+plugins {
+    id 'com.android.application'
+    id 'eclipse'
+}
+
+android {
+    namespace "com.metalit.test"
+
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.metalit.test"
+        minSdk 30
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+java {
+  toolchain {
+    languageVersion.set(JavaLanguageVersion.of(17))
+  }
+}
+
+dependencies {
+    implementation files('lib/unity.jar')
+}

@@ -1,6 +1,14 @@
 # include some defines automatically made by qpm
 include(qpm_defines.cmake)
 
+if (GL_DEBUG)
+    message("Building with GL debugging")
+    add_compile_definitions(GL_DEBUG=\"\")
+endif()
+
+# override android level
+set(ANDROID_PLATFORM 28)
+
 # override mod id
 set(MOD_ID "Hollywood")
 
@@ -82,7 +90,7 @@ target_include_directories(${COMPILE_ID} PUBLIC ${SHARED_DIR})
 # codegen includes
 target_include_directories(${COMPILE_ID} PRIVATE ${EXTERN_DIR}/includes/${CODEGEN_ID}/include)
 
-target_link_libraries(${COMPILE_ID} PRIVATE -llog -lOpenSLES GLESv3)
+target_link_libraries(${COMPILE_ID} PRIVATE -llog -landroid -lOpenSLES -lEGL GLESv3 mediandk)
 
 # add extern stuff like libs and other includes
 include(extern.cmake)
@@ -106,3 +114,5 @@ add_custom_command(TARGET ${COMPILE_ID} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E rename stripped_lib${COMPILE_ID}.so lib${COMPILE_ID}.so
     COMMENT "Rename the stripped lib to regular"
 )
+
+include(assets.cmake)

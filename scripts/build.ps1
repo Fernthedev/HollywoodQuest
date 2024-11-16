@@ -3,6 +3,9 @@ Param(
     [Switch] $clean,
 
     [Parameter(Mandatory=$false)]
+    [Switch] $glDebug,
+
+    [Parameter(Mandatory=$false)]
     [Switch] $help
 )
 
@@ -27,5 +30,21 @@ if (($clean.IsPresent) -or (-not (Test-Path -Path "build"))) {
     New-Item -Path build -ItemType Directory
 }
 
-& cmake -G "Ninja" -DCMAKE_BUILD_TYPE="RelWithDebInfo" -B build
+Set-Location "java"
+Move-Item "app/build.gradle.vscode-disabled" "app/build.gradle"
+& ./gradlew build
+if ($LASTEXITCODE -ne 0) {
+    Move-Item "app/build.gradle" "app/build.gradle.vscode-disabled"
+    exit $LASTEXITCODE
+}
+Move-Item "app/build.gradle" "app/build.gradle.vscode-disabled"
+& tar -Oxf "app/build/outputs/apk/release/app-release-unsigned.apk" "classes.dex" > "../assets/classes.dex"
+Set-Location ..
+
+$def = "OFF"
+if ($glDebug.IsPresent) {
+    $def = "ON"
+}
+
+& cmake -G "Ninja" -DCMAKE_BUILD_TYPE="RelWithDebInfo" -DGL_DEBUG="$def" -B build
 & cmake --build ./build

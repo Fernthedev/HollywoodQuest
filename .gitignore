@@ -60,3 +60,7 @@ extern.cmake
 qpm_defines.cmake
 build/
 mod.json
+
+binary_cache
+*.html
+perf.data
