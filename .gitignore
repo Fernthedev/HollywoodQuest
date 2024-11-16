@@ -37,11 +37,6 @@
 .cache
 
 # NDK stuff
-out/
-[Ll]ib/
-[Ll]ibs/
-[Oo]bj/
-[Oo]bjs/
 ndkpath.txt
 *.zip
 *.txt
