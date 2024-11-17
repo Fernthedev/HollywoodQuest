@@ -39,7 +39,6 @@ void Hollywood::Init() {
     custom_types::Register::AutoRegister();
 
     LoadClassAsset();
-    // sendSurfaceCapture(nullptr, 0, 1, 30, false);
 
     logger.info("Installing audio mix hook...");
     uintptr_t libunity = baseAddr("libunity.so");
@@ -71,7 +70,6 @@ void Hollywood::SetMuteSpeakers(bool value) {
     setMute(value);
 }
 
-void Hollywood::MuxFilesSync(std::string_view sourceMp4, std::string_view sourceWav, std::string_view outputMp4) {
-    Muxer::muxFiles(sourceMp4, sourceWav, outputMp4);
-    Muxer::cleanup();
+void Hollywood::MuxFilesSync(std::string_view video, std::string_view audio, std::string_view outputMp4) {
+    Muxer::muxFiles(video, audio, outputMp4);
 }

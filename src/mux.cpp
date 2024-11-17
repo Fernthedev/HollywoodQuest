@@ -12,222 +12,197 @@ extern "C" {
 // https://stackoverflow.com/questions/16768794/muxing-from-audio-and-video-files-with-ffmpeg
 // https://github.com/FFmpeg/FFmpeg/blob/master/doc/examples/transcode_aac.c
 
-// I do not have the patience to fix deprecated warnings when it works
+// maybe if ffmpeg had a decent api I wouldn't have to make so many macros
+#define CLEANUP(function, var, ...) Cleanup var##Cleanup (__VA_ARGS__ var, function)
+#define EARLY_CLEAN(var) var##Cleanup.clean()
+#define CANCEL_CLEAN(var) var##Cleanup.cancel()
+
+#define ASSERTR(action, ...) if (!(action)) { logger.error(__VA_ARGS__); return; }
+#define ASSERTC(action, ...) if (!(action)) { logger.error(__VA_ARGS__); continue; }
+#define AV_E_R(action, msg) { int err = action; ASSERTR(err >= 0, msg " error: {}", av_err2str(err)); }
+#define AV_E_C(action, msg) { int err = action; ASSERTC(err >= 0, msg " error: {}", av_err2str(err)); }
+#define NULLR(var, action, msg) auto var = action; ASSERTR(var, msg);
+#define NULLC(var, action, msg) auto var = action; ASSERTC(var, msg);
 
 namespace Muxer {
-    AVFormatContext* videoContext;
-    AVFormatContext* audioContext;
-    AVCodecContext* audioCodecContext;
-    AVFormatContext* outputContext;
-    AVCodecContext* outputVideoCodecContext;
-    AVCodecContext* outputAudioCodecContext;
-    SwrContext* audioSwr;
-    AVAudioFifo* audioFifo;
-    AVFrame* audioFrame;
-    uint8_t** audioSamples;
+    template <class T>
+    struct Cleanup {
+        Cleanup() = delete;
+        Cleanup(Cleanup const&) = delete;
+        Cleanup(T* item, void (*cleanup)(T*)) : item(item), cleanup(cleanup){};
 
-#define FREE(method, var, pref) if (var) { method(pref var); var = nullptr; }
+        ~Cleanup() { clean(); }
 
-    void cleanupTemporaries() {
-        if (audioSamples)
-            av_freep(&audioSamples[0]);
-        FREE(av_freep, audioSamples, &);
-        FREE(av_frame_free, audioFrame, &);
-    }
+        void cancel() { item = nullptr; }
 
-    void cleanup() {
-        FREE(avformat_free_context, videoContext, );
-        FREE(avformat_free_context, audioContext, );
-        FREE(avformat_free_context, outputContext, );
-        FREE(avcodec_free_context, audioCodecContext, &);
-        // close instead of free because they were allocated by the muxer streams
-        FREE(avcodec_close, outputVideoCodecContext, );
-        FREE(avcodec_close, outputAudioCodecContext, );
+        void clean() {
+            if (item)
+                cleanup(item);
+            cancel();
+        }
 
-        FREE(swr_free, audioSwr, &);
-        FREE(av_audio_fifo_free, audioFifo, );
-        FREE(av_frame_free, audioFrame, &);
-        logger.info("Finished muxing cleanup");
-    }
-
-#undef FREE
+       private:
+        T* item;
+        void (*cleanup)(T*);
+    };
 
     // simple muxer that copies the source codec and encodes the audio
     // since the formats are fixed, it skips the majority of fallbacks and error handling
-    void muxFiles(std::string_view sourceMp4, std::string_view sourceWav, std::string_view outputMp4) {
-        logger.info("Muxing initializing");
+    void muxFiles(std::string_view video, std::string_view audio, std::string_view outputMp4) {
+        logger.info("muxing initializing {} {} -> {}", video, audio, outputMp4);
 
-        // av_log_set_callback(*[](void* ptr, int level, const char* fmt, __va_list args) {
-        //     std::string msg = string_vformat(fmt, args);
-        //     logger.info("FFMPEG [{}] {}", level, msg);
-        // });
+        if (LIBAVFORMAT_VERSION_INT != avformat_version())
+            logger.warn("avformat version mismatch! headers {} lib {}", LIBAVFORMAT_VERSION_INT, avformat_version());
+        if (LIBAVCODEC_VERSION_INT != avcodec_version())
+            logger.warn("avcodec version mismatch! headers {} lib {}", LIBAVCODEC_VERSION_INT, avcodec_version());
+        if (LIBAVUTIL_VERSION_INT != avutil_version())
+            logger.warn("avutil version mismatch! headers {} lib {}", LIBAVUTIL_VERSION_INT, avutil_version());
+        if (LIBSWRESAMPLE_VERSION_INT != swresample_version())
+            logger.warn("swresample version mismatch! headers {} lib {}", LIBSWRESAMPLE_VERSION_INT, swresample_version());
 
-        // open video and deduce its information
-        int err = avformat_open_input(&videoContext, sourceMp4.data(), nullptr, nullptr);
-        if (err < 0) {
-            logger.error("Video open error: {}", av_err2str(err));
-            return;
-        }
-        err = avformat_find_stream_info(videoContext, nullptr);
-        if (err < 0) {
-            logger.error("Video stream info error: {}", av_err2str(err));
-            return;
-        }
-        logger.debug("Using input video codec {}", avcodec_get_name(videoContext->streams[0]->codecpar->codec_id));
+        AVFormatContext* inputVideoFormat = nullptr;
+        AVFormatContext* inputAudioFormat = nullptr;
+        AVFormatContext* outputFormat = nullptr;
+        uint8_t** audioSamples = nullptr;
 
-        int fps = videoContext->streams[0]->r_frame_rate.num / videoContext->streams[0]->r_frame_rate.den;
-        logger.debug("Found fps {} bitrate {}", fps, videoContext->streams[0]->codecpar->bit_rate);
+        av_log_set_callback(*[](void* ptr, int level, char const* fmt, va_list args) {
+            if (level > AV_LOG_VERBOSE)
+                return;
+            va_list copy;
+            va_copy(copy, args);
+            int size = vsnprintf(nullptr, 0, fmt, copy) + 1;
+            va_end(copy);
+            char buffer[size];
+            vsnprintf(buffer, size, fmt, args);
+            logger.debug("FFMPEG [{}] {}", level, (char*) buffer);
+        });
 
-        // open audio and deduce its information
-        err = avformat_open_input(&audioContext, sourceWav.data(), nullptr, nullptr);
-        if (err < 0) {
-            logger.error("Audio open error: {}", av_err2str(err));
-            return;
-        }
-        err = avformat_find_stream_info(audioContext, nullptr);
-        if (err < 0) {
-            logger.error("Audio stream info error: {}", av_err2str(err));
-            return;
-        }
-        AVStream* audioStream = audioContext->streams[0];
-        audioStream->codecpar->channel_layout = av_get_default_channel_layout(audioStream->codecpar->channels);
+        // open video and get format details
+        AV_E_R(avformat_open_input(&inputVideoFormat, video.data(), nullptr, nullptr), "video open");
+        CLEANUP(avformat_close_input, inputVideoFormat, &);
 
-        // create audio codec context for transcoder input
-        AVCodec* audioCodec = avcodec_find_decoder(audioStream->codecpar->codec_id);
-        if (!audioCodec) {
-            logger.error("Failed to make audio codec");
-            return;
-        }
-        logger.debug("Using input audio codec {} ({})", audioCodec->name, audioCodec->long_name);
-        audioCodecContext = avcodec_alloc_context3(audioCodec);
+        AV_E_R(avformat_find_stream_info(inputVideoFormat, nullptr), "get video stream info");
 
-        err = avcodec_parameters_to_context(audioCodecContext, audioStream->codecpar);
-        // err = avcodec_parameters_from_context(audioStream->codecpar, audioCodecContext);
-        if (err < 0) {
-            logger.error("Audio codec params error: {}", av_err2str(err));
-            return;
-        }
+        ASSERTR(inputVideoFormat->nb_streams > 0, "no streams in video");
+        auto inputVideoStream = inputVideoFormat->streams[0];
 
-        err = avcodec_open2(audioCodecContext, audioCodec, nullptr);
-        if (err < 0) {
-            logger.error("Audio codec open error: {}", av_err2str(err));
-            return;
-        }
-        audioCodecContext->pkt_timebase = audioStream->time_base;
+        // log some info for sanity checks
+        logger.debug("found input video codec {}", avcodec_get_name(inputVideoStream->codecpar->codec_id));
+        float fps = inputVideoStream->r_frame_rate.num / (float) inputVideoStream->r_frame_rate.den;
+        logger.debug("found fps {} bitrate {}", fps, inputVideoStream->codecpar->bit_rate);
+
+        // open audio and get format details
+        AV_E_R(avformat_open_input(&inputAudioFormat, audio.data(), nullptr, nullptr), "audio open");
+        CLEANUP(avformat_close_input, inputAudioFormat, &);
+
+        AV_E_R(avformat_find_stream_info(inputAudioFormat, nullptr), "audio stream info");
+
+        ASSERTR(inputAudioFormat->nb_streams > 0, "no streams in audio");
+        auto inputAudioStream = inputAudioFormat->streams[0];
+
+        logger.debug("found input audio codec {}", avcodec_get_name(inputAudioStream->codecpar->codec_id));
+        logger.debug(
+            "found channels {} sample rate {} bitrate {} (using {})",
+            inputAudioStream->codecpar->channels,
+            inputAudioStream->codecpar->sample_rate,
+            inputAudioStream->codecpar->bit_rate,
+            inputAudioFormat->bit_rate
+        );
+
+        // find codec to decode the input audio
+        NULLR(inputAudioCodec, avcodec_find_decoder(inputAudioStream->codecpar->codec_id), "failed to find audio decoder");
+
+        NULLR(inputAudioDecoder, avcodec_alloc_context3(inputAudioCodec), "failed to make audio decoder");
+        CLEANUP(avcodec_free_context, inputAudioDecoder, &);
+
+        AV_E_R(avcodec_parameters_to_context(inputAudioDecoder, inputAudioStream->codecpar), "audio params to ctx");
+
+        AV_E_R(avcodec_open2(inputAudioDecoder, inputAudioCodec, nullptr), "audio decoder open");
+
+        inputAudioDecoder->pkt_timebase = inputAudioStream->time_base;
 
         // allocate output and get defaults for its encoding
-        err = avformat_alloc_output_context2(&outputContext, nullptr, nullptr, outputMp4.data());
-        if (err < 0) {
-            logger.error("Output context error: {}", av_err2str(err));
-            return;
-        }
+        AV_E_R(avformat_alloc_output_context2(&outputFormat, nullptr, nullptr, outputMp4.data()), "output context");
+        CLEANUP(avformat_free_context, outputFormat);
 
-        // create video stream with input codec
-        // const AVCodec* videoCodec = videoContext->streams[0]->codec->codec;
-        AVStream* outputVideoStream = avformat_new_stream(outputContext, nullptr);
-        if (!outputVideoStream) {
-            logger.error("Failed to make video stream");
-            return;
-        }
-        err = avcodec_parameters_copy(outputVideoStream->codecpar, videoContext->streams[0]->codecpar);
-        if (err < 0) {
-            logger.error("Output param copy: {}", av_err2str(err));
-            return;
-        }
+        // create video stream in output with input codec
+        NULLR(outputVideoStream, avformat_new_stream(outputFormat, inputVideoFormat->video_codec), "failed to make video stream");
 
-        auto inStream = videoContext->streams[0];
-        outputVideoStream->r_frame_rate.den = inStream->r_frame_rate.den;
-        outputVideoStream->r_frame_rate.num = inStream->r_frame_rate.num;
-        outputVideoStream->avg_frame_rate.den = inStream->avg_frame_rate.den;
-        outputVideoStream->avg_frame_rate.num = inStream->avg_frame_rate.num;
-        outputVideoStream->codecpar->bit_rate = inStream->codecpar->bit_rate;
-        // outputVideoStream->time_base.num = 1;
-        // outputVideoStream->time_base.den = 1000;
-        // avcodec_parameters_to_context(outputVideoStream->codec, outputVideoStream->codecpar);
-        // outputVideoCodecContext = outputVideoStream->codec; // needs to be freed later
-        // avcodec_open2(outputVideoCodecContext, nullptr, nullptr);
-        logger.debug("Using output video codec {}", avcodec_get_name(outputVideoStream->codecpar->codec_id));
+        AV_E_R(avcodec_parameters_copy(outputVideoStream->codecpar, inputVideoStream->codecpar), "output video param copy");
 
-        // create audio stream with default mp4 codec (will require transcoding)
-        audioCodec = avcodec_find_encoder(outputContext->oformat->audio_codec);
-        if (!audioCodec) {
-            logger.error("Failed to find audio encoder");
-            return;
-        }
-        logger.debug("Using output audio codec {} ({})", audioCodec->name, audioCodec->long_name);
-        AVStream* outputAudioStream = avformat_new_stream(outputContext, audioCodec);
-        if (!outputAudioStream) {
-            logger.error("Failed to make audio stream");
-            return;
-        }
-        // configure some values not set by new_stream
-        outputAudioCodecContext = outputAudioStream->codec;
-        outputAudioCodecContext->channel_layout = av_get_channel_layout("stereo");
-        outputAudioCodecContext->channels = av_get_channel_layout_nb_channels(outputAudioCodecContext->channel_layout);
-        outputAudioCodecContext->sample_fmt = audioCodec->sample_fmts[0];
-        outputAudioCodecContext->sample_rate = audioCodecContext->sample_rate;
-        outputAudioCodecContext->frame_size = audioCodecContext->frame_size;
-        outputAudioCodecContext->bit_rate = audioCodecContext->bit_rate;
+        outputVideoStream->r_frame_rate.den = inputVideoStream->r_frame_rate.den;
+        outputVideoStream->r_frame_rate.num = inputVideoStream->r_frame_rate.num;
+        outputVideoStream->avg_frame_rate.den = inputVideoStream->avg_frame_rate.den;
+        outputVideoStream->avg_frame_rate.num = inputVideoStream->avg_frame_rate.num;
+        outputVideoStream->time_base = inputVideoStream->time_base;
 
-        err = avcodec_open2(outputAudioCodecContext, audioCodec, nullptr);
-        if (err < 0) {
-            logger.error("Audio codec open error: {}", av_err2str(err));
-            return;
-        }
+        logger.debug("using output video codec {}", avcodec_get_name(outputVideoStream->codecpar->codec_id));
 
-        err = avcodec_parameters_from_context(outputAudioStream->codecpar, outputAudioCodecContext);
-        if (err < 0) {
-            logger.error("Output audio codec params error: {}", av_err2str(err));
-            return;
-        }
+        // create audio stream with default mp4 codec (may require transcoding)
+        NULLR(outputAudioCodec, avcodec_find_encoder(outputFormat->oformat->audio_codec), "failed to find audio encoder");
 
-        if (outputContext->oformat->flags & AVFMT_GLOBALHEADER)
-            outputAudioCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        NULLR(outputAudioStream, avformat_new_stream(outputFormat, outputAudioCodec), "failed to make audio stream");
 
-        outputAudioStream->time_base.den = audioCodecContext->sample_rate;
+        NULLR(outputAudioEncoder, avcodec_alloc_context3(outputAudioCodec), "failed to make audio encoder");
+        CLEANUP(avcodec_free_context, outputAudioEncoder, &);
+
+        // set some basic parameters
+        outputAudioEncoder->channels = 2;
+        outputAudioEncoder->channel_layout = av_get_default_channel_layout(outputAudioEncoder->channels);
+        outputAudioEncoder->sample_fmt = outputAudioCodec->sample_fmts[0];
+        outputAudioEncoder->sample_rate = inputAudioDecoder->sample_rate;  // if these differ then it's even more annoying
+        outputAudioEncoder->bit_rate = inputAudioFormat->bit_rate;  // stream bitrate isn't detected properly. maybe needs an update
+
+        if (outputFormat->oformat->flags & AVFMT_GLOBALHEADER)
+            outputAudioEncoder->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+        outputAudioStream->time_base.den = outputAudioEncoder->sample_rate;
         outputAudioStream->time_base.num = 1;
 
-        // create transcoder resampler
-        audioSwr = swr_alloc_set_opts(
-            nullptr,
-            outputAudioCodecContext->channel_layout,
-            outputAudioCodecContext->sample_fmt,
-            outputAudioCodecContext->sample_rate,
-            audioCodecContext->channel_layout,
-            audioCodecContext->sample_fmt,
-            audioCodecContext->sample_rate,
-            0,
-            nullptr
+        AV_E_R(avcodec_open2(outputAudioEncoder, outputAudioCodec, nullptr), "audio encoder open");
+
+        AV_E_R(avcodec_parameters_from_context(outputAudioStream->codecpar, outputAudioEncoder), "audio params from ctx");
+
+        logger.debug("using output audio codec {}", avcodec_get_name(outputFormat->oformat->audio_codec));
+        logger.debug(
+            "using channels {} sample rate {} bitrate {}",
+            outputAudioStream->codecpar->channels,
+            outputAudioStream->codecpar->sample_rate,
+            outputAudioStream->codecpar->bit_rate
         );
-        if (!audioSwr) {
-            logger.error("Failed to make audio swr");
-            return;
-        }
 
-        err = swr_init(audioSwr);
-        if (err < 0) {
-            logger.error("Swr init error: {}", av_err2str(err));
-            return;
-        }
+        // create transcoder resampler
+        NULLR(
+            audioSwr,
+            swr_alloc_set_opts(
+                nullptr,
+                outputAudioEncoder->channel_layout,
+                outputAudioEncoder->sample_fmt,
+                outputAudioEncoder->sample_rate,
+                inputAudioDecoder->channel_layout,
+                inputAudioDecoder->sample_fmt,
+                inputAudioDecoder->sample_rate,
+                0,
+                nullptr
+            ),
+            "failed to make audio swr"
+        );
+        CLEANUP(swr_free, audioSwr, &);
 
-        // initialize an FIFO buffer (not sure this is necessary, it's in case the frame sizes differ)
-        audioFifo = av_audio_fifo_alloc(outputAudioCodecContext->sample_fmt, outputAudioCodecContext->channels, outputAudioCodecContext->frame_size);
-        if (!audioFifo) {
-            logger.error("Failed to make audio fifo");
-            return;
-        }
+        AV_E_R(swr_init(audioSwr), "swr init");
+
+        // initialize an FIFO buffer in case the frame sizes differ
+        NULLR(
+            audioFifo,
+            av_audio_fifo_alloc(outputAudioEncoder->sample_fmt, outputAudioEncoder->channels, outputAudioEncoder->frame_size),
+            "failed to make audio fifo"
+        );
+        CLEANUP(av_audio_fifo_free, audioFifo);
 
         // open output file
-        err = avio_open2(&outputContext->pb, outputMp4.data(), AVIO_FLAG_WRITE, nullptr, nullptr);
-        if (err < 0) {
-            logger.error("Output open error: {}", av_err2str(err));
-            return;
-        }
-        err = avformat_write_header(outputContext, NULL);
-        if (err < 0) {
-            logger.error("Write header error: {}", av_err2str(err));
-            return;
-        }
+        AV_E_R(avio_open2(&outputFormat->pb, outputMp4.data(), AVIO_FLAG_WRITE, nullptr, nullptr), "output open");
+
+        AV_E_R(avformat_write_header(outputFormat, nullptr), "write header");
 
         // write all frames from video and audio, stopping audio at video end
         double audioTime = 0, videoTime = 0;
@@ -235,196 +210,133 @@ namespace Muxer {
         int64_t audioPts = 0;
 
         AVPacket packet, outputPacket;
-        int audioFrameSize = outputAudioCodecContext->frame_size;
+        int audioFrameSize = outputAudioEncoder->frame_size;
 
-        logger.info("Beginning muxing");
-        logger.debug("Video stream: {} Audio stream: {}", outputVideoStream->index, outputAudioStream->index);
+        logger.info("setup done, beginning muxing");
+        logger.debug("video stream idx {} audio stream idx {}", outputVideoStream->index, outputAudioStream->index);
 
         while (true) {
             if (audioFinished || audioTime > videoTime) {
-                err = av_read_frame(videoContext, &packet);
-                if (err == AVERROR_EOF) {
-                    av_packet_unref(&packet);
+                int err = av_read_frame(inputVideoFormat, &packet);
+                if (err == AVERROR_EOF)
                     break;
-                }
-                if (err < 0) {
-                    logger.error("Read video frame error: {}", av_err2str(err));
-                    av_packet_unref(&packet);
-                    continue;
-                }
+                AV_E_C(err, "read video frame");
+                CLEANUP(av_packet_unref, packet, &);
 
+                // don't cleanup because av_interleaved_write_frame takes our ref
                 av_init_packet(&outputPacket);
+                CLEANUP(av_packet_unref, outputPacket, &);
 
-                err = av_packet_ref(&outputPacket, &packet);
-                if (err < 0) {
-                    logger.error("Packet copy props error: {}", av_err2str(err));
-                    av_packet_unref(&outputPacket);
-                    av_packet_unref(&packet);
-                    continue;
-                }
-                // outputPacket.data = packet.data;
-                // outputPacket.size = packet.size;
-                // make sure stream index is correct, can't just copy from the input
+                AV_E_C(av_packet_ref(&outputPacket, &packet), "packet copy props");
+
+                // make sure stream index is correct
                 outputPacket.stream_index = outputVideoStream->index;
 
-                av_interleaved_write_frame(outputContext, &outputPacket);
+                AV_E_C(av_interleaved_write_frame(outputFormat, &outputPacket), "write video frame");
+                CANCEL_CLEAN(outputPacket);
 
                 videoTime = packet.pts * (outputVideoStream->time_base.num / (double) outputVideoStream->time_base.den);
-
-                av_packet_unref(&packet);
             } else if (!audioFinished) {
                 // transcode frames until we have an output frame in the buffer
                 while (av_audio_fifo_size(audioFifo) < audioFrameSize) {
-                    cleanupTemporaries();
-
                     // allocate a frame and a samples array to store audio
-                    audioFrame = av_frame_alloc();
-                    if (!audioFrame) {
-                        logger.error("Failed to make audio frame");
-                        continue;
-                    }
+                    NULLC(audioFrame, av_frame_alloc(), "failed to make audio frame");
+                    CLEANUP(av_frame_free, audioFrame, &);
 
-                    err = av_read_frame(audioContext, &packet);
+                    int err = av_read_frame(inputAudioFormat, &packet);
                     if (err == AVERROR_EOF) {
                         audioFinished = true;
-                        av_packet_unref(&packet);
                         break;
                     }
-                    if (err < 0) {
-                        logger.error("Read audio frame error: {}", av_err2str(err));
-                        av_packet_unref(&packet);
-                        continue;
-                    }
+                    AV_E_C(err, "read audio frame");
+                    CLEANUP(av_packet_unref, packet, &);
 
                     // send the frame to the decoder
-                    err = avcodec_send_packet(audioCodecContext, &packet);
-                    if (err < 0) {
-                        logger.error("Send audio packet error: {}", av_err2str(err));
-                        av_packet_unref(&packet);
-                        continue;
-                    }
+                    AV_E_C(avcodec_send_packet(inputAudioDecoder, &packet), "send audio packet");
+                    EARLY_CLEAN(packet);
 
                     // get the decoded frame back
-                    err = avcodec_receive_frame(audioCodecContext, audioFrame);
-                    av_packet_unref(&packet);
-
-                    if (err == AVERROR(EAGAIN))
+                    err = avcodec_receive_frame(inputAudioDecoder, audioFrame);
+                    // needs more input
+                    if (err == AVERROR(EAGAIN) || err == AVERROR_EOF)
                         continue;
-                    // can this happen if the earlier EOF didn't?
-                    if (err == AVERROR_EOF) {
-                        audioFinished = true;
-                        break;
-                    }
-                    if (err < 0) {
-                        logger.error("Receive audio frame error: {}", av_err2str(err));
-                        continue;
-                    }
+                    AV_E_C(err, "receive audio frame");
 
-                    err = av_samples_alloc_array_and_samples(
-                        &audioSamples, nullptr, outputAudioCodecContext->channels, audioFrame->nb_samples, outputAudioCodecContext->sample_fmt, 0
+                    // create array for samples
+                    AV_E_C(
+                        av_samples_alloc_array_and_samples(
+                            &audioSamples, nullptr, outputAudioEncoder->channels, audioFrame->nb_samples, outputAudioEncoder->sample_fmt, 0
+                        ),
+                        "alloc audio samples"
                     );
-                    if (err < 0) {
-                        logger.error("Samples array alloc error: {}", av_err2str(err));
-                        continue;
-                    }
-
-                    // get converted samples
-                    err = swr_convert(
-                        audioSwr, audioSamples, audioFrame->nb_samples, (uint8_t const**) audioFrame->extended_data, audioFrame->nb_samples
+                    CLEANUP(
+                        *[](uint8_t** samples) {
+                            av_freep(&samples[0]);
+                            av_free(samples);
+                        },
+                        audioSamples
                     );
-                    if (err < 0) {
-                        logger.error("Swr convert error: {}", av_err2str(err));
-                        continue;
-                    }
 
-                    // realloc buffer to size + new frame size
-                    err = av_audio_fifo_realloc(audioFifo, av_audio_fifo_size(audioFifo) + audioFrame->nb_samples);
-                    if (err < 0) {
-                        logger.error("Fifo realloc error: {}", av_err2str(err));
-                        continue;
-                    }
+                    // convert the samples into the array
+                    AV_E_C(
+                        swr_convert(
+                            audioSwr, audioSamples, audioFrame->nb_samples, (uint8_t const**) audioFrame->extended_data, audioFrame->nb_samples
+                        ),
+                        "swr sample convert"
+                    );
 
                     // write converted frame to fifo
-                    err = av_audio_fifo_write(audioFifo, (void**) audioSamples, audioFrame->nb_samples);
-                    if (err < 0) {
-                        logger.error("Fifo write error: {}", av_err2str(err));
-                        continue;
-                    }
-                }
-                cleanupTemporaries();
+                    AV_E_C(av_audio_fifo_realloc(audioFifo, av_audio_fifo_size(audioFifo) + audioFrame->nb_samples), "fifo realloc");
 
+                    AV_E_C(av_audio_fifo_write(audioFifo, (void**) audioSamples, audioFrame->nb_samples), "fifo write");
+                }
                 // write all frames in the buffer
                 while (av_audio_fifo_size(audioFifo) >= audioFrameSize) {
-                    cleanupTemporaries();
+                    NULLC(audioFrame, av_frame_alloc(), "failed to make audio frame");
+                    CLEANUP(av_frame_free, audioFrame, &);
 
-                    audioFrame = av_frame_alloc();
-                    if (!audioFrame) {
-                        logger.error("Failed to make audio frame");
-                        continue;
-                    }
-                    // add frame metadata
+                    // write info to the frams
                     audioFrame->nb_samples = audioFrameSize;
-                    audioFrame->channel_layout = outputAudioCodecContext->channel_layout;
-                    audioFrame->channels = outputAudioCodecContext->channels;
-                    audioFrame->format = outputAudioCodecContext->sample_fmt;
-                    audioFrame->sample_rate = outputAudioCodecContext->sample_rate;
+                    audioFrame->channels = outputAudioEncoder->channels;
+                    audioFrame->channel_layout = outputAudioEncoder->channel_layout;
+                    audioFrame->format = outputAudioEncoder->sample_fmt;
+                    audioFrame->sample_rate = outputAudioEncoder->sample_rate;
 
-                    err = av_frame_get_buffer(audioFrame, 0);
-                    if (err < 0) {
-                        logger.error("Audio get buffer error: {}", av_err2str(err));
-                        continue;
-                    }
+                    // write the converted samples to the frame
+                    AV_E_C(av_frame_get_buffer(audioFrame, 0), "allocate audio frame buffer");
 
-                    // get a frame from the fifo buffer
-                    err = av_audio_fifo_read(audioFifo, (void**) audioFrame->data, audioFrameSize);
-                    if (err < 0) {
-                        logger.error("Fifo read error: {}", av_err2str(err));
-                        continue;
-                    }
+                    AV_E_C(av_audio_fifo_read(audioFifo, (void**) audioFrame->data, audioFrameSize), "fifo read");
 
                     // update pts (timestamp)
                     audioFrame->pts = audioPts;
                     audioPts += audioFrameSize;
 
                     // send the frame to the encoder
-                    err = avcodec_send_frame(outputAudioCodecContext, audioFrame);
-                    if (err < 0 && err != AVERROR_EOF) {
-                        logger.error("Send audio frame error: {}", av_err2str(err));
-                        return;
-                    }
+                    AV_E_C(avcodec_send_frame(outputAudioEncoder, audioFrame), "send audio frame");
 
                     av_init_packet(&outputPacket);
+                    CLEANUP(av_packet_unref, outputPacket, &);
 
                     // get the encoded frame
-                    err = avcodec_receive_packet(outputAudioCodecContext, &outputPacket);
-                    if (err == AVERROR(EAGAIN)) {
-                        av_packet_unref(&outputPacket);
+                    int err = avcodec_receive_packet(outputAudioEncoder, &outputPacket);
+                    // needs more input
+                    if (err == AVERROR(EAGAIN) || err == AVERROR_EOF)
                         continue;
-                    }
-                    if (err == AVERROR_EOF) {
-                        av_packet_unref(&outputPacket);
-                        break;
-                    }
-                    if (err < 0) {
-                        logger.error("Receive audio packet error: {}", av_err2str(err));
-                        av_packet_unref(&outputPacket);
-                        continue;
-                    }
+                    AV_E_C(err, "receive audio packet");
+
                     outputPacket.stream_index = outputAudioStream->index;
 
-                    av_interleaved_write_frame(outputContext, &outputPacket);
+                    av_interleaved_write_frame(outputFormat, &outputPacket);
+                    CANCEL_CLEAN(outputPacket);
 
-                    audioTime = audioPts / (double) outputAudioCodecContext->sample_rate;
+                    audioTime = audioPts / (double) outputAudioEncoder->sample_rate;
                 }
-                cleanupTemporaries();
             }
         }
-        err = av_write_trailer(outputContext);
-        if (err < 0) {
-            logger.error("Write trailer error: {}", av_err2str(err));
-            return;
-        }
+        logger.debug("found video time {} audio time {}", videoTime, audioTime);
 
-        logger.info("Finished muxing");
+        AV_E_R(av_write_trailer(outputFormat), "write trailer");
+
+        logger.info("finished muxing");
     }
 }

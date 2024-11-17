@@ -8,5 +8,5 @@ namespace Hollywood {
     void SetSyncTimes(bool value);
     void SetScreenOn(bool value);
     void SetMuteSpeakers(bool value);
-    void MuxFilesSync(std::string_view sourceMp4, std::string_view sourceWav, std::string_view outputMp4);
+    void MuxFilesSync(std::string_view video, std::string_view audio, std::string_view outputMp4);
 }
