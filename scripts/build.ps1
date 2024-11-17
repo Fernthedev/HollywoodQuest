@@ -38,7 +38,13 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 Move-Item "app/build.gradle" "app/build.gradle.vscode-disabled"
-& tar -Oxf "app/build/outputs/apk/release/app-release-unsigned.apk" "classes.dex" > "../assets/classes.dex"
+if (Test-Path -Path "temp") {
+    Remove-Item -Path "temp" -Recurse
+}
+New-Item -ItemType Directory -Path "temp" | Out-Null
+Expand-Archive -Path "app/build/outputs/apk/release/app-release-unsigned.apk" -DestinationPath "temp"
+Move-Item "temp/classes.dex" "../assets/classes.dex" -Force
+Remove-Item -Path "temp" -Recurse
 Set-Location ..
 
 $def = "OFF"
