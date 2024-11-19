@@ -120,14 +120,21 @@ static Matrix4x4 MatrixTranslate(Vector3 const& vector) {
     return result;
 }
 
-void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov) {
-    if (!camera)
-        camera = GetComponent<Camera*>();
+void CameraCapture::Awake() {
+    camera = GetComponent<Camera*>();
 
+    if (dataId == -1)
+        camera->enabled = false;
+}
+
+void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov, bool hevc) {
+    if (!camera)
+        Awake();
     if (!camera || dataId != -1)
         return;
 
     logger.info("Making video capture");
+    logger.debug("size {}/{} fps {} bitrate {} fov {} hevc {}", width, height, fps, bitrate, fov, hevc);
 
     if (texture)
         Object::Destroy(texture);
@@ -149,7 +156,7 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov)
 
     camera->enabled = false;
 
-    encoder = CreateH264Encoder(width, height, bitrate, fps);
+    encoder = CreateEncoder(width, height, bitrate, fps, hevc ? "video/hevc" : "video/avc");
 
     ANativeWindow* window;
     auto err = AMediaCodec_createInputSurface(encoder, &window);
@@ -169,8 +176,10 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov)
     int texId = (uintptr_t) texture->GetNativeTexturePtr().m_value.convert();
     dataId = dataMap.add(width, height, texId, encoder, window);
 
-    fpsDelta = fps > 0 ? 1 / fps : -1;
-    lastFrameTime = 0;
+    fpsDelta = fps > 0 ? 1 / (double) fps : -1;
+    // bias against skipping frames if target fps is similar enough to unity fps
+    startTime = Time::get_time() - fpsDelta / 2;
+    frames = 0;
 
     stopThread = false;
     thread = std::thread(&EncodeLoop, encoder, onOutputUnit, &stopThread);
@@ -198,18 +207,15 @@ void CameraCapture::Update() {
         return;
 
     bool doFrame = true;
-    if (fpsDelta > 0) {
-        float time = Time::get_time();
-        if (time - lastFrameTime > fpsDelta)
-            lastFrameTime = time;
-        else
-            doFrame = false;
-    }
+    if (fpsDelta > 0 && Time::get_time() - startTime < fpsDelta * frames)
+        doFrame = false;
 
     // camera->Render horribly breaks the texture, probably because of threading
     camera->enabled = doFrame;
-    if (doFrame)
+    if (doFrame) {
+        frames++;
         IssuePluginEvent(&PluginUpdate, dataId);
+    }
 
     while (syncTimes) {
         currentGameTime = Time::get_time();

@@ -48,7 +48,7 @@ namespace Muxer {
 
     // simple muxer that copies the source codec and encodes the audio
     // since the formats are fixed, it skips the majority of fallbacks and error handling
-    void muxFiles(std::string_view video, std::string_view audio, std::string_view outputMp4) {
+    void muxFiles(std::string_view video, std::string_view audio, std::string_view outputMp4, double fps) {
         logger.info("muxing initializing {} {} -> {}", video, audio, outputMp4);
 
         if (LIBAVFORMAT_VERSION_INT != avformat_version())
@@ -88,8 +88,8 @@ namespace Muxer {
 
         // log some info for sanity checks
         logger.debug("found input video codec {}", avcodec_get_name(inputVideoStream->codecpar->codec_id));
-        float fps = inputVideoStream->r_frame_rate.num / (float) inputVideoStream->r_frame_rate.den;
-        logger.debug("found fps {} bitrate {}", fps, inputVideoStream->codecpar->bit_rate);
+        double fpsDelta = fps > 0 ? 1 / fps : inputVideoStream->r_frame_rate.den / (float) inputVideoStream->r_frame_rate.num;
+        logger.debug("found fps {} bitrate {}", 1 / fpsDelta, inputVideoStream->codecpar->bit_rate);
 
         // open audio and get format details
         AV_E_R(avformat_open_input(&inputAudioFormat, audio.data(), nullptr, nullptr), "audio open");
@@ -120,6 +120,10 @@ namespace Muxer {
         AV_E_R(avcodec_open2(inputAudioDecoder, inputAudioCodec, nullptr), "audio decoder open");
 
         inputAudioDecoder->pkt_timebase = inputAudioStream->time_base;
+        if (inputAudioDecoder->channels != 2)
+            logger.warn("potentially invalid input audio channels");
+        inputAudioDecoder->channels = 2;
+        inputAudioDecoder->channel_layout = av_get_default_channel_layout(inputAudioDecoder->channels);
 
         // allocate output and get defaults for its encoding
         AV_E_R(avformat_alloc_output_context2(&outputFormat, nullptr, nullptr, outputMp4.data()), "output context");
@@ -130,10 +134,8 @@ namespace Muxer {
 
         AV_E_R(avcodec_parameters_copy(outputVideoStream->codecpar, inputVideoStream->codecpar), "output video param copy");
 
-        outputVideoStream->r_frame_rate.den = inputVideoStream->r_frame_rate.den;
-        outputVideoStream->r_frame_rate.num = inputVideoStream->r_frame_rate.num;
-        outputVideoStream->avg_frame_rate.den = inputVideoStream->avg_frame_rate.den;
-        outputVideoStream->avg_frame_rate.num = inputVideoStream->avg_frame_rate.num;
+        outputVideoStream->r_frame_rate = fps > 0 ? av_d2q(fps, -1) : inputVideoStream->r_frame_rate;
+        outputVideoStream->avg_frame_rate = fps > 0 ? av_d2q(fps, -1) : inputVideoStream->avg_frame_rate;
         outputVideoStream->time_base = inputVideoStream->time_base;
 
         logger.debug("using output video codec {}", avcodec_get_name(outputVideoStream->codecpar->codec_id));
@@ -147,11 +149,12 @@ namespace Muxer {
         CLEANUP(avcodec_free_context, outputAudioEncoder, &);
 
         // set some basic parameters
-        outputAudioEncoder->channels = 2;
-        outputAudioEncoder->channel_layout = av_get_default_channel_layout(outputAudioEncoder->channels);
+        outputAudioEncoder->channels = inputAudioDecoder->channels;
+        outputAudioEncoder->channel_layout = inputAudioDecoder->channel_layout;
         outputAudioEncoder->sample_fmt = outputAudioCodec->sample_fmts[0];
         outputAudioEncoder->sample_rate = inputAudioDecoder->sample_rate;  // if these differ then it's even more annoying
         outputAudioEncoder->bit_rate = inputAudioFormat->bit_rate;  // stream bitrate isn't detected properly. maybe needs an update
+        outputAudioEncoder->bits_per_raw_sample = inputAudioDecoder->bits_per_raw_sample;
 
         if (outputFormat->oformat->flags & AVFMT_GLOBALHEADER)
             outputAudioEncoder->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -223,7 +226,13 @@ namespace Muxer {
                 AV_E_C(err, "read video frame");
                 CLEANUP(av_packet_unref, packet, &);
 
-                // don't cleanup because av_interleaved_write_frame takes our ref
+                // use detected frame rate if not found by the decoder
+                // ffmpeg complains about this in the debug callback, but raw h264 doesn't have pts to begin with
+                if (packet.pts == AV_NOPTS_VALUE) {
+                    videoTime += fpsDelta;
+                    packet.pts = videoTime * (outputVideoStream->time_base.den / (double) outputVideoStream->time_base.num);
+                }
+
                 av_init_packet(&outputPacket);
                 CLEANUP(av_packet_unref, outputPacket, &);
 
@@ -233,6 +242,7 @@ namespace Muxer {
                 outputPacket.stream_index = outputVideoStream->index;
 
                 AV_E_C(av_interleaved_write_frame(outputFormat, &outputPacket), "write video frame");
+                // don't cleanup because av_interleaved_write_frame took our ref
                 CANCEL_CLEAN(outputPacket);
 
                 videoTime = packet.pts * (outputVideoStream->time_base.num / (double) outputVideoStream->time_base.den);

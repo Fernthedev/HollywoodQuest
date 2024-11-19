@@ -66,18 +66,6 @@ target_link_libraries(${COMPILE_ID} PRIVATE
     ${ffmpeg_list}
 )
 
-# Rav1e
-if(DEFINED BUILD_RAV1E)
-    target_include_directories(${COMPILE_ID} PRIVATE SYSTEM rav1e/include)
-    RECURSE_FILES(rav1e_list rav1e/*.a)
-
-    add_compile_definitions(USE_AV1)
-
-    target_link_libraries(${COMPILE_ID} PRIVATE
-        ${rav1e_list}
-    )
-endif()
-
 # add src dir as include dir
 target_include_directories(${COMPILE_ID} PRIVATE ${SOURCE_DIR})
 

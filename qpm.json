@@ -22,6 +22,10 @@
       "log": [
         "pwsh ./scripts/start-logging.ps1 $0:"
       ],
+      "prof": [
+        "pwsh ./scripts/profile.ps1",
+        "pwsh ./scripts/report.ps1"
+      ],
       "qmod": [
         "pwsh ./scripts/build.ps1 $0?",
         "pwsh ./scripts/createqmod.ps1"

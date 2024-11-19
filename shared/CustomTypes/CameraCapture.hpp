@@ -10,7 +10,8 @@
 DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
     DECLARE_DEFAULT_CTOR();
 
-    DECLARE_INSTANCE_METHOD(void, Init, int width, int height, int fps, int bitrate, float fov);
+    DECLARE_INSTANCE_METHOD(void, Awake);
+    DECLARE_INSTANCE_METHOD(void, Init, int width, int height, int fps, int bitrate, float fov, bool hevc = false);
     DECLARE_INSTANCE_METHOD(void, Stop);
     DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(void, OnPostRender);
@@ -25,8 +26,9 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
    private:
     AMediaCodec* encoder;
     ANativeWindow* window;
-    float fpsDelta;
-    float lastFrameTime;
+    double fpsDelta;
+    float startTime;
+    int frames;
 
     int dataId = -1;
 

@@ -2,15 +2,13 @@
 
 #include "main.hpp"
 
-static auto const mime = "video/avc";
-
-AMediaCodec* Hollywood::CreateH264Encoder(int width, int height, int bitrate, int fps) {
+AMediaCodec* Hollywood::CreateEncoder(int width, int height, int bitrate, int fps, char const* mime) {
     AMediaFormat* format = AMediaFormat_new();
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_WIDTH, width);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_HEIGHT, height);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, bitrate);
 
-    AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, mime);  // H.264
+    AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, mime);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 0x7f000789);  // COLOR_FormatSurface
     AMediaFormat_setFloat(format, AMEDIAFORMAT_KEY_FRAME_RATE, fps);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_I_FRAME_INTERVAL, 30);
@@ -55,7 +53,6 @@ void Hollywood::EncodeLoop(AMediaCodec* encoder, std::function<void(uint8_t*, si
         int index = AMediaCodec_dequeueOutputBuffer(encoder, &bufferInfo, 1000);  // 1 ms
 
         if (index >= 0) {
-            // frame!
             size_t outSize;
             uint8_t* data = AMediaCodec_getOutputBuffer(encoder, index, &outSize);
 

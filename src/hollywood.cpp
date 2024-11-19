@@ -70,6 +70,6 @@ void Hollywood::SetMuteSpeakers(bool value) {
     setMute(value);
 }
 
-void Hollywood::MuxFilesSync(std::string_view video, std::string_view audio, std::string_view outputMp4) {
-    Muxer::muxFiles(video, audio, outputMp4);
+void Hollywood::MuxFilesSync(std::string_view video, std::string_view audio, std::string_view outputMp4, double fps) {
+    Muxer::muxFiles(video, audio, outputMp4, fps);
 }
