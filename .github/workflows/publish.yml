@@ -33,14 +33,22 @@ jobs:
           cat ${GITHUB_WORKSPACE}/ndkpath.txt
 
       - name: QPM Action
-        uses: Fernthedev/qpm-action@main
+        uses: Fernthedev/qpm-action@v1
         with:
           workflow_token: ${{ secrets.GITHUB_TOKEN }}
 
           restore: true
           cache: true
 
-          publish: false
+          publish: late
+          publish_token: ${{ secrets.QPM_TOKEN }}
+          tag: v${{ github.event.inputs.version }}
+          version: "${{ github.event.inputs.version }}"
+
+          qpm_release_bin: true
+          qpm_debug_bin: false
+
+          qpm_qmod: ${{ env.qmodName }}.qmod
 
       - name: List Post Restore
         run: |
@@ -99,22 +107,3 @@ jobs:
             ./${{ env.qmodName }}.qmod
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: QPM Publish
-        uses: Fernthedev/qpm-action@main
-        with:
-          workflow_token: ${{ secrets.GITHUB_TOKEN }}
-
-          restore: false
-
-          eager_publish: true # Will publish the package
-          publish_token: ${{ secrets.QPM_TOKEN }} # Token required for authorization publish to qpackages.com
-          tag: v${{ github.event.inputs.version }}
-          version: "${{ github.event.inputs.version }}" # defaults to qpm-rust version, do not include v
-
-          # set to true if applicable, ASSUMES the file is already a release asset
-          qpm_release_bin: true
-          qpm_debug_bin: false
-
-          # Name of qmod in release asset. Assumes exists, same as prior
-          qpm_qmod: ${{ env.qmodName }}.qmod
