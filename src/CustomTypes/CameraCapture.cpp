@@ -201,6 +201,9 @@ void CameraCapture::Stop() {
     encoder = nullptr;
     window = nullptr;
     dataId = -1;
+
+    if (camera)
+        camera->enabled = false;
 }
 
 void CameraCapture::Update() {
@@ -231,8 +234,7 @@ void CameraCapture::Update() {
 }
 
 void CameraCapture::OnPostRender() {
-    if (camera)
-        camera->enabled = false;
+    // leave function for now, to avoid breaking change
 }
 
 void CameraCapture::OnDestroy() {
