@@ -20,6 +20,7 @@
 #include "assets.hpp"
 #include "egl.hpp"
 #include "encoder.hpp"
+#include "hollywood.hpp"
 #include "main.hpp"
 #include "shader.hpp"
 #include "thread_map.hpp"
@@ -219,8 +220,7 @@ void CameraCapture::Update() {
 
     while (syncTimes) {
         currentGameTime = Time::get_time();
-        long dspClock = AudioSettings::get_dspTime() * sampleRate;
-        long dspDelta = dspClock - startDspClock;
+        long dspDelta = GetDSPClock() - startDspClock;
         float gameDelta = currentGameTime - startGameTime;
         long gameDeltaInSamples = gameDelta * sampleRate;
         if (gameDeltaInSamples < dspDelta + (sampleRate * 0.1))

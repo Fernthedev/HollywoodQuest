@@ -5,6 +5,7 @@
 
 namespace Hollywood {
     void Init();
+    long GetDSPClock();
     void SetSyncTimes(bool value);
     void SetScreenOn(bool value);
     void SetMuteSpeakers(bool value);

@@ -2,6 +2,7 @@
 
 #include "UnityEngine/AudioSettings.hpp"
 #include "UnityEngine/Time.hpp"
+#include "hollywood.hpp"
 #include "main.hpp"
 
 using namespace Hollywood;
@@ -93,7 +94,8 @@ void AudioCapture::OpenFile(std::string const& filename) {
 
     sampleRate = UnityEngine::AudioSettings::get_outputSampleRate();
     startGameTime = currentGameTime = UnityEngine::Time::get_time();
-    startDspClock = UnityEngine::AudioSettings::get_dspTime() * sampleRate;
+    startDspClock = GetDSPClock();
+    logger.debug("unity dsp time {} vs internal {}", UnityEngine::AudioSettings::get_dspTime() * sampleRate, GetDSPClock());
 }
 
 void AudioCapture::Save() {

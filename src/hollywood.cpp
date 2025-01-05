@@ -9,17 +9,21 @@
 #include "main.hpp"
 #include "mux.hpp"
 
+static char* gOutput = nullptr;
+
 // I'm pretty sure this is the same thread as OnAudioFilterRead, but if I sleep there, it locks up
 MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
+
+    if (output != gOutput) {
+        logger.debug("setting output to {}", fmt::ptr(output));
+        gOutput = output;
+    }
 
     if (!syncTimes)
         return fmod_output_mix(output, p1, p2);
 
-    char* system = *(char**) (output + 0x60);
-    long dspClock = *(long*) (system + 0xc78);
-
     while (syncTimes) {
-        long dspDelta = dspClock - startDspClock;
+        long dspDelta = Hollywood::GetDSPClock() - startDspClock;
         float gameDelta = currentGameTime - startGameTime;
         long gameDeltaInSamples = gameDelta * sampleRate;
         // game time has pulled ahead, allow audio to run
@@ -52,11 +56,17 @@ void Hollywood::Init() {
     initialized = true;
 }
 
+long Hollywood::GetDSPClock() {
+    char* system = *(char**) (gOutput + 0x60);
+    return *(long*) (system + 0xc78);
+}
+
 void Hollywood::SetSyncTimes(bool value) {
     if (value) {
         sampleRate = UnityEngine::AudioSettings::get_outputSampleRate();
         startGameTime = currentGameTime = UnityEngine::Time::get_time();
-        startDspClock = UnityEngine::AudioSettings::get_dspTime() * sampleRate;
+        startDspClock = GetDSPClock();
+        logger.debug("unity dsp time {} vs internal {}", UnityEngine::AudioSettings::get_dspTime() * sampleRate, GetDSPClock());
     }
     syncTimes = value;
 }
