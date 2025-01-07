@@ -6,7 +6,7 @@
     "info": {
       "name": "Hollywood",
       "id": "hollywood",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "url": "https://github.com/Fernthedev/HollywoodQuest",
       "additionalData": {
         "overrideSoName": "libhollywood.so"
@@ -23,6 +23,10 @@
         ],
         "log": [
           "pwsh ./scripts/start-logging.ps1 $0:"
+        ],
+        "prof": [
+          "pwsh ./scripts/profile.ps1",
+          "pwsh ./scripts/report.ps1"
         ],
         "qmod": [
           "pwsh ./scripts/build.ps1 $0?",
@@ -84,13 +88,13 @@
     {
       "dependency": {
         "id": "paper",
-        "versionRange": "=3.6.4",
+        "versionRange": "=3.7.0",
         "additionalData": {
-          "soLink": "https://github.com/Fernthedev/paperlog/releases/download/v3.6.4/libpaperlog.so",
-          "debugSoLink": "https://github.com/Fernthedev/paperlog/releases/download/v3.6.4/debug_libpaperlog.so",
+          "soLink": "https://github.com/Fernthedev/paperlog/releases/download/v3.7.0/libpaperlog.so",
+          "debugSoLink": "https://github.com/Fernthedev/paperlog/releases/download/v3.7.0/debug_libpaperlog.so",
           "overrideSoName": "libpaperlog.so",
-          "modLink": "https://github.com/Fernthedev/paperlog/releases/download/v3.6.4/paperlog.qmod",
-          "branchName": "version/v3_6_4",
+          "modLink": "https://github.com/Fernthedev/paperlog/releases/download/v3.7.0/paperlog.qmod",
+          "branchName": "version/v3_7_0",
           "compileOptions": {
             "systemIncludes": [
               "shared/utfcpp/source"
@@ -99,7 +103,7 @@
           "cmake": false
         }
       },
-      "version": "3.6.4"
+      "version": "3.7.0"
     },
     {
       "dependency": {
@@ -171,23 +175,23 @@
     {
       "dependency": {
         "id": "scotland2",
-        "versionRange": "=0.1.4",
+        "versionRange": "=0.1.6",
         "additionalData": {
-          "soLink": "https://github.com/sc2ad/scotland2/releases/download/v0.1.4/libsl2.so",
-          "debugSoLink": "https://github.com/sc2ad/scotland2/releases/download/v0.1.4/debug_libsl2.so",
+          "soLink": "https://github.com/sc2ad/scotland2/releases/download/v0.1.6/libsl2.so",
+          "debugSoLink": "https://github.com/sc2ad/scotland2/releases/download/v0.1.6/debug_libsl2.so",
           "overrideSoName": "libsl2.so",
-          "branchName": "version/v0_1_4"
+          "branchName": "version/v0_1_6"
         }
       },
-      "version": "0.1.4"
+      "version": "0.1.6"
     },
     {
       "dependency": {
         "id": "fmt",
-        "versionRange": "=10.0.0",
+        "versionRange": "=11.0.2",
         "additionalData": {
           "headersOnly": true,
-          "branchName": "version/v10_0_0",
+          "branchName": "version/v11_0_2",
           "compileOptions": {
             "systemIncludes": [
               "fmt/include/"
@@ -198,7 +202,7 @@
           }
         }
       },
-      "version": "10.0.0"
+      "version": "11.0.2"
     }
   ]
 }
