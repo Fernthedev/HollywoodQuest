@@ -7,7 +7,7 @@
 #include "UnityEngine/RenderTexture.hpp"
 #include "custom-types/shared/macros.hpp"
 
-DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
+DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour) {
     DECLARE_DEFAULT_CTOR();
 
     DECLARE_INSTANCE_METHOD(void, Awake);
@@ -34,4 +34,4 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour,
 
     bool stopThread = false;
     std::thread thread;
-)
+};

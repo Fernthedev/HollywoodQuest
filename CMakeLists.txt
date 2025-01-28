@@ -39,11 +39,16 @@ add_compile_options(-O3)
 # compile definitions used
 add_compile_definitions(VERSION=\"${MOD_VERSION}\")
 add_compile_definitions(MOD_ID=\"${MOD_ID}\")
-add_compile_definitions(USE_CODEGEN_FIELDS)
+
+string(LENGTH "${CMAKE_CURRENT_LIST_DIR}/" FOLDER_LENGTH)
+add_compile_definitions("PAPER_ROOT_FOLDER_LENGTH=${FOLDER_LENGTH}")
 
 # recursively get all src files
 RECURSE_FILES(cpp_file_list ${SOURCE_DIR}/*.cpp)
 RECURSE_FILES(c_file_list ${SOURCE_DIR}/*.c)
+
+RECURSE_FILES(inline_hook_c ${EXTERN_DIR}/includes/beatsaber-hook/shared/inline-hook/*.c)
+RECURSE_FILES(inline_hook_cpp ${EXTERN_DIR}/includes/beatsaber-hook/shared/inline-hook/*.cpp)
 
 # add all src files to compile
 add_library(
@@ -51,6 +56,8 @@ add_library(
     SHARED
     ${cpp_file_list}
     ${c_file_list}
+    ${inline_hook_c}
+    ${inline_hook_cpp}
 )
 
 target_include_directories(${COMPILE_ID} PRIVATE .)
@@ -60,11 +67,9 @@ target_link_libraries(${COMPILE_ID} PRIVATE mediandk)
 
 # FFMPEG
 target_include_directories(${COMPILE_ID} PRIVATE SYSTEM ffmpeg/)
-RECURSE_FILES(ffmpeg_list ffmpeg/*.so)
 
-target_link_libraries(${COMPILE_ID} PRIVATE
-    ${ffmpeg_list}
-)
+RECURSE_FILES(ffmpeg_list ffmpeg/*.so)
+target_link_libraries(${COMPILE_ID} PRIVATE ${ffmpeg_list})
 
 # add src dir as include dir
 target_include_directories(${COMPILE_ID} PRIVATE ${SOURCE_DIR})
@@ -74,9 +79,6 @@ target_include_directories(${COMPILE_ID} PRIVATE ${INCLUDE_DIR})
 
 # add shared dir as include dir
 target_include_directories(${COMPILE_ID} PUBLIC ${SHARED_DIR})
-
-# codegen includes
-target_include_directories(${COMPILE_ID} PRIVATE ${EXTERN_DIR}/includes/${CODEGEN_ID}/include)
 
 target_link_libraries(${COMPILE_ID} PRIVATE -llog -landroid -lOpenSLES -lEGL GLESv3 mediandk)
 

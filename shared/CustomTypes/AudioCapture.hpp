@@ -22,7 +22,7 @@ namespace Hollywood {
     };
 }
 
-DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour,
+DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour) {
     DECLARE_DEFAULT_CTOR();
 
     DECLARE_INSTANCE_METHOD(void, Update);
@@ -39,4 +39,4 @@ DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour,
    private:
     AudioWriter writer = {};
     bool rendering = false;
-)
+};
