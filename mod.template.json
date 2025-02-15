@@ -5,7 +5,7 @@
   "author": "Metalit, Fernthedev, Henwill8",
   "version": "${version}",
   "packageId": "com.beatgames.beatsaber",
-  "packageVersion": "1.40.0_2229",
+  "packageVersion": "1.40.2_4113",
   "description": "Record videos on your quest!",
   "coverImage": "cover.png",
   "dependencies": [],
@@ -15,7 +15,8 @@
     "libavformat.so",
     "libavutil.so",
     "libc++_shared.so",
-    "libswresample.so"
+    "libswresample.so",
+    "${binary}"
   ],
   "fileCopies": [],
   "copyExtensions": []
