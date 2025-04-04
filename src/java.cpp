@@ -50,7 +50,8 @@ bool Hollywood::LoadClassAsset() {
 
     JNIFrame frame(env, 16);
 
-    auto dexBuffer = env->NewDirectByteBuffer((void*) IncludedAssets::classes_dex.data, IncludedAssets::classes_dex.len - 1);
+    std::string_view classes_dex = IncludedAssets::classes_dex;
+    auto dexBuffer = env->NewDirectByteBuffer((void*) classes_dex.data(), classes_dex.size() - 1);
 
     auto getClassLoader = env->GetMethodID(env->FindClass("java/lang/Class"), "getClassLoader", "()Ljava/lang/ClassLoader;");
     if (!getClassLoader) {

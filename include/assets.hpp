@@ -1,21 +1,30 @@
 #pragma once
 
-#include <cstdint>
+#include "metacore/shared/assets.hpp"
 
-#define DECLARE_FILE(name)                       \
-    extern "C" uint8_t _binary_##name##_start[]; \
-    extern "C" uint8_t _binary_##name##_end[];   \
-    const Asset name {_binary_##name##_start, _binary_##name##_end};
+#define DECLARE_ASSET(name, binary)       \
+    const IncludedAsset name {            \
+        Externs::_binary_##binary##_start, \
+        Externs::_binary_##binary##_end    \
+    };
+
+#define DECLARE_ASSET_NS(namespaze, name, binary) \
+    namespace namespaze { DECLARE_ASSET(name, binary) }
 
 namespace IncludedAssets {
-    struct Asset {
-        Asset(uint8_t* start, uint8_t* end) : data((char*) start), len(end - start) { *(end - 1) = 0; }
-        char const* const data;
-        int const len;
-    };
-    DECLARE_FILE(classes_dex)
-    DECLARE_FILE(gamma_fs_glsl)
-    DECLARE_FILE(gamma_vs_glsl)
-}
+    namespace Externs {
+        extern "C" uint8_t _binary_classes_dex_start[];
+        extern "C" uint8_t _binary_classes_dex_end[];
+        extern "C" uint8_t _binary_gamma_fs_glsl_start[];
+        extern "C" uint8_t _binary_gamma_fs_glsl_end[];
+        extern "C" uint8_t _binary_gamma_vs_glsl_start[];
+        extern "C" uint8_t _binary_gamma_vs_glsl_end[];
+    }
 
-#undef DECLARE_FILE
+    // classes.dex
+    DECLARE_ASSET(classes_dex, classes_dex);
+    // gamma_fs.glsl
+    DECLARE_ASSET(gamma_fs_glsl, gamma_fs_glsl);
+    // gamma_vs.glsl
+    DECLARE_ASSET(gamma_vs_glsl, gamma_vs_glsl);
+}

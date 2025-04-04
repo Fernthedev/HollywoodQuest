@@ -29,6 +29,9 @@ MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
         // game time has pulled ahead, allow audio to run
         if (dspDelta < gameDeltaInSamples)
             break;
+        logger.debug(
+            "sleeping audio thread ({})! dsp {} >= game {}", std::hash<std::thread::id>()(std::this_thread::get_id()), dspDelta, gameDeltaInSamples
+        );
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 

@@ -57,7 +57,7 @@ static void PluginUpdate(int id) {
         return;
 
     // initialize on render thread
-    static Hollywood::Shader gammaShader = {IncludedAssets::gamma_vs_glsl.data, IncludedAssets::gamma_fs_glsl.data};
+    static Hollywood::Shader gammaShader = {IncludedAssets::gamma_vs_glsl, IncludedAssets::gamma_fs_glsl};
 
     if (!data->surface) {
         data->surface = MakeSurface(data->window);
@@ -228,6 +228,13 @@ void CameraCapture::Update() {
         long gameDeltaInSamples = gameDelta * sampleRate;
         if (gameDeltaInSamples < dspDelta + (sampleRate * 0.1))
             break;
+        logger.debug(
+            "sleeping game thread ({})! game {} >= dsp {} + {}",
+            std::hash<std::thread::id>()(std::this_thread::get_id()),
+            gameDeltaInSamples,
+            dspDelta,
+            (sampleRate * 0.1)
+        );
         // game time is too far ahead, pause for audio
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }

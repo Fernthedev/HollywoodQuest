@@ -25,12 +25,13 @@ static bool CheckCompileError(GLuint shader, char const* name) {
     return false;
 }
 
-Hollywood::Shader::Shader(char const* vertex, char const* fragment) {
+Hollywood::Shader::Shader(std::string_view vertex, std::string_view fragment) {
     logger.info("Creating shader program");
 
     GLuint vid = glCreateShader(GL_VERTEX_SHADER);
 
-    glShaderSource(vid, 1, &vertex, 0);
+    auto vertex_data = vertex.data();
+    glShaderSource(vid, 1, &vertex_data, 0);
     glCompileShader(vid);
     GL_ERR_CHECK("vertex shader");
 
@@ -39,7 +40,8 @@ Hollywood::Shader::Shader(char const* vertex, char const* fragment) {
 
     GLuint fid = glCreateShader(GL_FRAGMENT_SHADER);
 
-    glShaderSource(fid, 1, &fragment, 0);
+    auto fragment_data = fragment.data();
+    glShaderSource(fid, 1, &fragment_data, 0);
     glCompileShader(fid);
     GL_ERR_CHECK("fragment shader");
 

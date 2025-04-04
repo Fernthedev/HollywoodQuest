@@ -1,4 +1,5 @@
 {
+  "version": "0.1.0",
   "sharedDir": "shared",
   "dependenciesDir": "extern",
   "info": {
@@ -63,17 +64,22 @@
     },
     {
       "id": "bs-cordl",
-      "versionRange": "^4020.0.0",
+      "versionRange": "^4004.0.0",
       "additionalData": {}
     },
     {
       "id": "paper2_scotland2",
-      "versionRange": "^4.4.2",
+      "versionRange": "^4.6.1",
       "additionalData": {}
     },
     {
       "id": "custom-types",
       "versionRange": "^0.18.2",
+      "additionalData": {}
+    },
+    {
+      "id": "metacore",
+      "versionRange": "^1.0.0",
       "additionalData": {}
     }
   ]
