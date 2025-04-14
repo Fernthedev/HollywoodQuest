@@ -4,7 +4,6 @@
 #include "CustomTypes/CameraCapture.hpp"
 
 namespace Hollywood {
-    void Init();
     long GetDSPClock();
     void SetSyncTimes(bool value);
     void SetScreenOn(bool value);

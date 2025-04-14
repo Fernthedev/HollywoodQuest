@@ -2,7 +2,7 @@
 
 #include "beatsaber-hook/shared/utils/logging.hpp"
 
-extern Paper::ConstLoggerContext<sizeof(MOD_ID)> logger;
+constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);
 
 extern bool syncTimes;
 

@@ -2,9 +2,7 @@
 
 #include "UnityEngine/AudioSettings.hpp"
 #include "UnityEngine/Time.hpp"
-#include "beatsaber-hook/shared/utils/hooking.hpp"
-#include "beatsaber-hook/shared/utils/il2cpp-functions.hpp"
-#include "custom-types/shared/register.hpp"
+#include "hooks.hpp"
 #include "java.hpp"
 #include "main.hpp"
 #include "mux.hpp"
@@ -38,15 +36,7 @@ MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
     return fmod_output_mix(output, p1, p2);
 }
 
-void Hollywood::Init() {
-    static bool initialized = false;
-    if (initialized)
-        return;
-
-    custom_types::Register::AutoRegister();
-
-    LoadClassAsset();
-
+AUTO_INSTALL_FUNCTION(fmod_output_mix) {
     logger.info("Installing audio mix hook...");
     uintptr_t libunity = baseAddr("libunity.so");
     uintptr_t fmod_output_mix_addr = findPattern(
@@ -55,8 +45,6 @@ void Hollywood::Init() {
     logger.info("Found audio mix address: {}", fmod_output_mix_addr);
     INSTALL_HOOK_DIRECT(logger, fmod_output_mix, (void*) fmod_output_mix_addr);
     logger.info("Installed audio mix hook!");
-
-    initialized = true;
 }
 
 long Hollywood::GetDSPClock() {

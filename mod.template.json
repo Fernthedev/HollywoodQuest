@@ -9,14 +9,13 @@
   "description": "Record videos on your quest!",
   "coverImage": "cover.png",
   "dependencies": [],
-  "modFiles": [],
+  "modFiles": ["${binary}"],
   "libraryFiles": [
     "libavcodec.so",
     "libavformat.so",
     "libavutil.so",
     "libc++_shared.so",
-    "libswresample.so",
-    "${binary}"
+    "libswresample.so"
   ],
   "fileCopies": [],
   "copyExtensions": []
