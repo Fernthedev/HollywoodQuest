@@ -16,6 +16,7 @@ AMediaCodec* Hollywood::CreateEncoder(int width, int height, int bitrate, int fp
     auto encoder = AMediaCodec_createEncoderByType(mime);
     if (!encoder) {
         logger.error("Failed to create encoder");
+        AMediaFormat_delete(format);
         return nullptr;
     }
 
