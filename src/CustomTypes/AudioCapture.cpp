@@ -9,13 +9,18 @@ using namespace Hollywood;
 
 DEFINE_TYPE(Hollywood, AudioCapture);
 
+template <class T>
+static inline void WriteStream(std::ofstream& writer, T value) {
+    writer.write(reinterpret_cast<char const*>(&value), sizeof(T));
+}
+
 void AudioWriter::OpenFile(std::string const& filename) {
     SAMPLE_RATE = UnityEngine::AudioSettings::get_outputSampleRate();
 
     if (writer.is_open())
         writer.close();
 
-    logger.info("Audio file {}", filename.c_str());
+    logger.info("Audio file {}", filename);
     writer.open(filename, std::ios::binary);
     // write space for header
     char zero[HEADER_SIZE] = {0};
@@ -24,9 +29,8 @@ void AudioWriter::OpenFile(std::string const& filename) {
 
 void AudioWriter::Write(ArrayW<float> audioData) {
     for (int i = 0; i < audioData.size(); i++) {
-        // write the short to the stream
-        short value = short(audioData[i] * 32767);
-        writer.write(reinterpret_cast<char const*>(&value), sizeof(short));
+        // scale the data (from -1 to 1 according to unity) then write
+        WriteStream<short>(writer, audioData[i] * std::numeric_limits<short>::max());
     }
 }
 
@@ -36,51 +40,36 @@ void AudioWriter::AddHeader() {
     // go back to start of file
     writer.seekp(0);
 
-    int intValue;
-    short shortValue;
+    WriteStream<int>(writer, 0x46464952);  // "RIFF" in ASCII
 
-    intValue = 0x46464952;
-    writer.write(reinterpret_cast<char const*>(&intValue), sizeof(int));  // "RIFF" in ASCII
+    // number of bytes in the entire file
+    int bytes = (int) (HEADER_SIZE + (samples * BITS_PER_SAMPLE * channels / 8)) - 8;
+    WriteStream<int>(writer, bytes);
 
-    // write the number of bytes in the entire file
-    intValue = (int) (HEADER_SIZE + (samples * BITS_PER_SAMPLE * channels / 8)) - 8;
-    writer.write(reinterpret_cast<char const*>(&intValue), sizeof(int));
+    WriteStream<int>(writer, 0x45564157);  // "WAVE" in ASCII
+    WriteStream<int>(writer, 0x20746d66);  // "fmt " in ASCII
+    WriteStream<int>(writer, 16);
 
-    intValue = 0x45564157;
-    writer.write(reinterpret_cast<char const*>(&intValue), sizeof(int));  // "WAVE" in ASCII
-    intValue = 0x20746d66;
-    writer.write(reinterpret_cast<char const*>(&intValue), sizeof(int));  // "fmt " in ASCII
-    intValue = 16;
-    writer.write(reinterpret_cast<char const*>(&intValue), sizeof(int));
+    // audio format: 1 = PCM
+    WriteStream<short>(writer, 1);
 
-    // write the format tag. 1 = PCM
-    shortValue = short(1);
-    writer.write(reinterpret_cast<char const*>(&shortValue), sizeof(short));
+    WriteStream<short>(writer, channels);
+    WriteStream<int>(writer, SAMPLE_RATE);
 
-    // write the number of channels.
-    shortValue = short(channels);
-    writer.write(reinterpret_cast<char const*>(&shortValue), sizeof(short));
+    int byteRate = SAMPLE_RATE * channels * (BITS_PER_SAMPLE / 8);
+    WriteStream<int>(writer, byteRate);
 
-    // write the sample rate. The number of audio samples per second
-    writer.write(reinterpret_cast<char const*>(&SAMPLE_RATE), sizeof(int));
+    short blockAlign = channels * (BITS_PER_SAMPLE / 8);
+    WriteStream<short>(writer, channels);
 
-    intValue = SAMPLE_RATE * channels * (BITS_PER_SAMPLE / 8);
-    writer.write(reinterpret_cast<char const*>(&intValue), sizeof(int));
-    shortValue = (short) (channels * (BITS_PER_SAMPLE / 8));
-    writer.write(reinterpret_cast<char const*>(&shortValue), sizeof(short));
+    WriteStream<short>(writer, BITS_PER_SAMPLE);
 
-    // 16 bits per sample
-    writer.write(reinterpret_cast<char const*>(&BITS_PER_SAMPLE), sizeof(short));
+    WriteStream<int>(writer, 0x61746164);  // "data" in ASCII
 
-    // "data" in ASCII. Start the data chunk.
-    intValue = 0x61746164;
-    writer.write(reinterpret_cast<char const*>(&intValue), sizeof(int));
+    // number of bytes in the data portion
+    int dataBytes = samples * BITS_PER_SAMPLE * channels / 8;
+    WriteStream(writer, dataBytes);
 
-    // write the number of bytes in the data portion
-    intValue = (int) (samples * BITS_PER_SAMPLE * channels / 8);
-    writer.write(reinterpret_cast<char const*>(&intValue), sizeof(int));
-
-    // close the file stream
     writer.close();
 }
 

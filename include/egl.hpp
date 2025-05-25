@@ -5,11 +5,13 @@
 #include <GLES3/gl3.h>
 
 #ifdef GL_DEBUG
-#define EGL_BOOL_CHECK(action, msg) if (!action) logger.error(msg " egl error {}", Hollywood::eglGetErrorString())
-#define GL_ERR_CHECK(msg) if (int e = glGetError()) logger.error(msg " gl error {}", e)
+#define EGL_BOOL_CHECK(action, msg) \
+    if (!action) logger.error(msg " egl error {}", Hollywood::eglGetErrorString())
+#define GL_ERR_CHECK(msg) \
+    if (int e = glGetError()) logger.error(msg " gl error {}", e)
 #else
 #define EGL_BOOL_CHECK(action, msg) action
-#define GL_ERR_CHECK(id)
+#define GL_ERR_CHECK(msg)
 #endif
 
 namespace Hollywood {

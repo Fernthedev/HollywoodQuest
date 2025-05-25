@@ -84,7 +84,9 @@ void Hollywood::DestroySurface(EGLSurface surface) {
 }
 
 #ifdef GL_DEBUG
-#define CASE_STR(value) case value: return #value
+#define CASE_STR(value) \
+    case value: return #value
+
 char const* Hollywood::eglGetErrorString() {
     switch (eglGetError()) {
         CASE_STR(EGL_SUCCESS);
@@ -109,8 +111,9 @@ char const* Hollywood::eglGetErrorString() {
 #undef CASE_STR
 
 #define LOG_ATTR(attr) \
-eglGetConfigAttrib(display, config, attr, &value); \
-logger.debug(#attr ": {}", value);
+    eglGetConfigAttrib(display, config, attr, &value); \
+    logger.debug(#attr ": {}", value);
+
 void Hollywood::eglLogConfig(EGLDisplay display, EGLConfig config) {
     EGLint value;
     logger.debug("--- logging egl config ---");
@@ -139,7 +142,9 @@ void Hollywood::eglLogConfig(EGLDisplay display, EGLConfig config) {
     LOG_ATTR(EGL_TRANSPARENT_TYPE);
 }
 
-#define CASE_STR(value) case GL_DEBUG_SOURCE_##value: return #value
+#define CASE_STR(value) \
+    case GL_DEBUG_SOURCE_##value: return #value
+
 static char const* glSourceString(GLenum source) {
     switch (source) {
         CASE_STR(API);
@@ -153,7 +158,9 @@ static char const* glSourceString(GLenum source) {
 }
 #undef CASE_STR
 
-#define CASE_STR(value) case GL_DEBUG_TYPE_##value: return #value
+#define CASE_STR(value) \
+    case GL_DEBUG_TYPE_##value: return #value
+
 static char const* glTypeString(GLenum type) {
     switch (type) {
         CASE_STR(ERROR);
@@ -169,7 +176,9 @@ static char const* glTypeString(GLenum type) {
 }
 #undef CASE_STR
 
-#define CASE_STR(value) case GL_DEBUG_SEVERITY_##value: return #value
+#define CASE_STR(value) \
+    case GL_DEBUG_SEVERITY_##value: return #value
+
 static char const* glSeverityString(GLenum severity) {
     switch (severity) {
         CASE_STR(HIGH);
