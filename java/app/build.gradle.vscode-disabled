@@ -8,12 +8,12 @@ plugins {
 }
 
 android {
-    namespace "com.metalit.test"
+    namespace "com.metalit.hollywood"
 
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.metalit.test"
+        applicationId "com.metalit.hollywood"
         minSdk 30
         targetSdk 34
         versionCode 1
