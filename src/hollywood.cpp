@@ -7,7 +7,12 @@
 #include "main.hpp"
 #include "mux.hpp"
 
+static constexpr int TIMEOUT_LOOPS = 200;  // theoretically a bit over a second, given 5ms sleeps
+
 static char* gOutput = nullptr;
+
+static int timeout = 0;
+static long currentGameDelta = 0;
 
 // I'm pretty sure this is the same thread as OnAudioFilterRead, but if I sleep there, it locks up
 MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
@@ -27,6 +32,15 @@ MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
         // game time has pulled ahead, allow audio to run
         if (dspDelta < gameDeltaInSamples)
             break;
+        // if the game delta hasn't updated for a while, exit
+        if (gameDeltaInSamples != currentGameDelta) {
+            currentGameDelta = gameDeltaInSamples;
+            timeout = 0;
+        }
+        if (++timeout > TIMEOUT_LOOPS) {
+            logger.warn("main thread timed out! allowing audio to continue...");
+            break;
+        }
         logger.debug(
             "sleeping audio thread ({})! dsp {} >= game {}", std::hash<std::thread::id>()(std::this_thread::get_id()), dspDelta, gameDeltaInSamples
         );
