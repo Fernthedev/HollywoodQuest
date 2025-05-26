@@ -55,6 +55,7 @@ extern.cmake
 qpm_defines.cmake
 build/
 mod.json
+classes.dex
 
 binary_cache
 *.html
