@@ -29,7 +29,7 @@ namespace Muxer {
     struct Cleanup {
         Cleanup() = delete;
         Cleanup(Cleanup const&) = delete;
-        Cleanup(T* item, void (*cleanup)(T*)) : item(item), cleanup(cleanup){};
+        Cleanup(T* item, void (*cleanup)(T*)) : item(item), cleanup(cleanup) {};
 
         ~Cleanup() { clean(); }
 
@@ -45,6 +45,37 @@ namespace Muxer {
         T* item;
         void (*cleanup)(T*);
     };
+
+#define CASE_STR(value) \
+    case AV_LOG_##value: return #value
+
+    static inline const char* levelString(int level) {
+        switch (level) {
+            CASE_STR(QUIET);
+            CASE_STR(PANIC);
+            CASE_STR(FATAL);
+            CASE_STR(ERROR);
+            CASE_STR(WARNING);
+            CASE_STR(INFO);
+            CASE_STR(VERBOSE);
+            CASE_STR(DEBUG);
+            CASE_STR(TRACE);
+            default:
+                return "Unknown";
+        }
+    }
+
+    static void ffmpegLog(void* ptr, int level, char const* fmt, va_list args) {
+        if (level > AV_LOG_VERBOSE)
+            return;
+        va_list copy;
+        va_copy(copy, args);
+        int size = vsnprintf(nullptr, 0, fmt, copy) + 1;
+        va_end(copy);
+        char buffer[size];
+        vsnprintf(buffer, size, fmt, args);
+        logger.debug("FFMPEG [{}] {}", levelString(level), (char*) buffer);
+    }
 
     // simple muxer that copies the source codec and encodes the audio
     // since the formats are fixed, it skips the majority of fallbacks and error handling
@@ -65,17 +96,7 @@ namespace Muxer {
         AVFormatContext* outputFormat = nullptr;
         uint8_t** audioSamples = nullptr;
 
-        av_log_set_callback(*[](void* ptr, int level, char const* fmt, va_list args) {
-            if (level > AV_LOG_VERBOSE)
-                return;
-            va_list copy;
-            va_copy(copy, args);
-            int size = vsnprintf(nullptr, 0, fmt, copy) + 1;
-            va_end(copy);
-            char buffer[size];
-            vsnprintf(buffer, size, fmt, args);
-            logger.debug("FFMPEG [{}] {}", level, (char*) buffer);
-        });
+        av_log_set_callback(ffmpegLog);
 
         // open video and get format details
         AV_E_R(avformat_open_input(&inputVideoFormat, video.data(), nullptr, nullptr), "video open");
