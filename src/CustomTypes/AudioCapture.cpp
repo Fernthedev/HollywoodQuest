@@ -35,7 +35,7 @@ void AudioWriter::Write(ArrayW<float> audioData) {
 }
 
 void AudioWriter::AddHeader() {
-    long samples = (int(writer.tellp()) - HEADER_SIZE) / (BITS_PER_SAMPLE / 8);
+    long size = (long) writer.tellp();
 
     // go back to start of file
     writer.seekp(0);
@@ -43,8 +43,7 @@ void AudioWriter::AddHeader() {
     WriteStream<int>(writer, 0x46464952);  // "RIFF" in ASCII
 
     // number of bytes in the entire file
-    int bytes = (int) (HEADER_SIZE + (samples * BITS_PER_SAMPLE * channels / 8)) - 8;
-    WriteStream<int>(writer, bytes);
+    WriteStream<int>(writer, size);
 
     WriteStream<int>(writer, 0x45564157);  // "WAVE" in ASCII
     WriteStream<int>(writer, 0x20746d66);  // "fmt " in ASCII
@@ -67,8 +66,7 @@ void AudioWriter::AddHeader() {
     WriteStream<int>(writer, 0x61746164);  // "data" in ASCII
 
     // number of bytes in the data portion
-    int dataBytes = samples * BITS_PER_SAMPLE * channels / 8;
-    WriteStream(writer, dataBytes);
+    WriteStream<int>(writer, size - HEADER_SIZE);
 
     writer.close();
 }
