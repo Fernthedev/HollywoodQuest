@@ -240,10 +240,6 @@ void CameraCapture::Update() {
     }
 }
 
-void CameraCapture::OnPostRender() {
-    // leave function for now, to avoid breaking change
-}
-
 void CameraCapture::OnDestroy() {
     Stop();
     if (camera)
