@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 namespace Hollywood {
     // a simple limiter for no latency
     struct SimpleLimiter {
