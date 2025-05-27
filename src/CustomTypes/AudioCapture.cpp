@@ -9,32 +9,47 @@ using namespace Hollywood;
 
 DEFINE_TYPE(Hollywood, AudioCapture);
 
+static SimpleLimiter limiter;
+
 template <class T>
 static inline void WriteStream(std::ofstream& writer, T value) {
     writer.write(reinterpret_cast<char const*>(&value), sizeof(T));
 }
 
 void AudioWriter::OpenFile(std::string const& filename) {
-    SAMPLE_RATE = UnityEngine::AudioSettings::get_outputSampleRate();
-
     if (writer.is_open())
         writer.close();
 
-    logger.info("Audio file {}", filename);
+    logger.info("Opening file for audio: {}", filename);
     writer.open(filename, std::ios::binary);
     // write space for header
     char zero[HEADER_SIZE] = {0};
     writer.write(zero, HEADER_SIZE);
 }
 
+void AudioWriter::Initialize(int channelsIn, int sampleRateIn) {
+    if (initialized)
+        return;
+    initialized = true;
+    channels = channelsIn;
+    sampleRate = sampleRateIn;
+    limiter.init(channels, sampleRate);
+}
+
 void AudioWriter::Write(ArrayW<float> audioData) {
-    for (int i = 0; i < audioData.size(); i++) {
-        // scale the data (from -1 to 1 according to unity) then write
-        WriteStream<short>(writer, audioData[i] * std::numeric_limits<short>::max());
+    if (!initialized || !writer.is_open())
+        return;
+    for (auto& value : audioData) {
+        // limit the data to between -1 and 1 (unity says the data will be in this range already but it lies)
+        float limited = limiter.process(value);
+        WriteStream<short>(writer, limited * std::numeric_limits<short>::max());
     }
 }
 
-void AudioWriter::AddHeader() {
+void AudioWriter::Close() {
+    if (!initialized || !writer.is_open())
+        return;
+
     long size = (long) writer.tellp();
 
     // go back to start of file
@@ -53,9 +68,9 @@ void AudioWriter::AddHeader() {
     WriteStream<short>(writer, 1);
 
     WriteStream<short>(writer, channels);
-    WriteStream<int>(writer, SAMPLE_RATE);
+    WriteStream<int>(writer, sampleRate);
 
-    int byteRate = SAMPLE_RATE * channels * (BITS_PER_SAMPLE / 8);
+    int byteRate = sampleRate * channels * (BITS_PER_SAMPLE / 8);
     WriteStream<int>(writer, byteRate);
 
     short blockAlign = channels * (BITS_PER_SAMPLE / 8);
@@ -69,10 +84,7 @@ void AudioWriter::AddHeader() {
     WriteStream<int>(writer, size - HEADER_SIZE);
 
     writer.close();
-}
-
-void AudioWriter::SetChannels(int num) {
-    channels = num;
+    initialized = false;
 }
 
 void AudioCapture::OpenFile(std::string const& filename) {
@@ -88,19 +100,19 @@ void AudioCapture::OpenFile(std::string const& filename) {
 void AudioCapture::Save() {
     rendering = false;
     logger.info("Closing audio file and adding header");
-    writer.AddHeader();
+    writer.Close();
 }
 
 void AudioCapture::Update() {
     currentGameTime = UnityEngine::Time::get_time();
 }
 
-void AudioCapture::OnAudioFilterRead(ArrayW<float> data, int audioChannels) {
+void AudioCapture::OnAudioFilterRead(ArrayW<float> data, int channels) {
     if (!rendering)
         return;
 
-    if (audioChannels > 0)
-        writer.SetChannels(audioChannels);
+    if (channels > 0)
+        writer.Initialize(channels, sampleRate);
     writer.Write(data);
 }
 

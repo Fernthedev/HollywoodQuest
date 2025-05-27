@@ -4,20 +4,23 @@
 
 #include "UnityEngine/MonoBehaviour.hpp"
 #include "custom-types/shared/macros.hpp"
+#include "limiter.hpp"
 
 namespace Hollywood {
     struct AudioWriter {
         void OpenFile(std::string const& filename);
+        void Initialize(int channels, int sampleRate);
         void Write(ArrayW<float> audioData);
-        void AddHeader();
-        void SetChannels(int num);
+        void Close();
 
-        static inline int const HEADER_SIZE = 44;
-        static inline short const BITS_PER_SAMPLE = 16;
+        static constexpr int HEADER_SIZE = 44;
+        static constexpr short BITS_PER_SAMPLE = 16;
 
        private:
-        int channels = 2;
-        int SAMPLE_RATE = 48000;
+        bool initialized = false;
+        int channels;
+        int sampleRate;
+        SimpleLimiter limiter;
         std::ofstream writer;
     };
 }
@@ -34,7 +37,9 @@ DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour) {
 
     void Save();
 
-    bool IsRendering() const { return rendering; }
+    bool IsRendering() const {
+        return rendering;
+    }
 
    private:
     AudioWriter writer = {};
