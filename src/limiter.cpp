@@ -1,5 +1,7 @@
 #include "limiter.hpp"
 
+#include <algorithm>
+
 using namespace Hollywood;
 
 void SimpleLimiter::init(int channels, int smoothness) {
