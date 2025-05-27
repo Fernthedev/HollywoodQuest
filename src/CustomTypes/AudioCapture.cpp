@@ -9,8 +9,6 @@ using namespace Hollywood;
 
 DEFINE_TYPE(Hollywood, AudioCapture);
 
-static SimpleLimiter limiter;
-
 template <class T>
 static inline void WriteStream(std::ofstream& writer, T value) {
     writer.write(reinterpret_cast<char const*>(&value), sizeof(T));
