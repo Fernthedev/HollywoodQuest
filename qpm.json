@@ -5,7 +5,7 @@
   "info": {
     "name": "Hollywood",
     "id": "hollywood",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "url": "https://github.com/Fernthedev/HollywoodQuest",
     "additionalData": {
       "overrideSoName": "libhollywood.so"
@@ -64,7 +64,7 @@
     },
     {
       "id": "bs-cordl",
-      "versionRange": "^4004.0.0",
+      "versionRange": "^4005.0.0",
       "additionalData": {}
     },
     {
