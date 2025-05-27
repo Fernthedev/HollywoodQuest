@@ -34,8 +34,14 @@ DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour) {
 
    public:
     void OpenFile(std::string const& filename);
-
     void Save();
+
+    void SetMuted(bool value) {
+        mute = value;
+    }
+    bool IsMuted() const {
+        return mute;
+    }
 
     bool IsRendering() const {
         return rendering;
@@ -44,4 +50,5 @@ DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour) {
    private:
     AudioWriter writer = {};
     bool rendering = false;
+    bool mute = true;
 };

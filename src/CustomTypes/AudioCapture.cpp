@@ -85,6 +85,26 @@ void AudioWriter::Close() {
     initialized = false;
 }
 
+void AudioCapture::Update() {
+    currentGameTime = UnityEngine::Time::get_time();
+}
+
+void AudioCapture::OnAudioFilterRead(ArrayW<float> data, int channels) {
+    if (!rendering)
+        return;
+
+    if (channels > 0)
+        writer.Initialize(channels, sampleRate);
+    writer.Write(data);
+
+    if (mute)
+        std::fill(data.begin(), data.end(), 0);
+}
+
+void AudioCapture::OnDestroy() {
+    Save();
+}
+
 void AudioCapture::OpenFile(std::string const& filename) {
     rendering = true;
     writer.OpenFile(filename);
@@ -99,21 +119,4 @@ void AudioCapture::Save() {
     rendering = false;
     logger.info("Closing audio file and adding header");
     writer.Close();
-}
-
-void AudioCapture::Update() {
-    currentGameTime = UnityEngine::Time::get_time();
-}
-
-void AudioCapture::OnAudioFilterRead(ArrayW<float> data, int channels) {
-    if (!rendering)
-        return;
-
-    if (channels > 0)
-        writer.Initialize(channels, sampleRate);
-    writer.Write(data);
-}
-
-void AudioCapture::OnDestroy() {
-    Save();
 }
