@@ -22,10 +22,10 @@ import android.view.WindowManager;
 
 public class MainClass {
     public static int DBG = 3;
-    public static int INF = 4;
-    public static int WRN = 5;
-    public static int ERR = 6;
-    public static int CRIT = 7;
+    public static int INF = 0;
+    public static int WRN = 1;
+    public static int ERR = 2;
+    public static int CRIT = 4;
 
     public static native void log(int level, String message);
 
