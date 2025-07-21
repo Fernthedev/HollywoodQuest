@@ -30,17 +30,10 @@ public class MainClass {
     public static native void log(int level, String message);
 
     public static void logE(String message, Throwable e) {
-        log(ERR, message + e.toString());
-        Throwable cause = e;
-        while (cause != null) {
-            if (cause != e)
-                log(ERR, "Caused by: " + e.toString());
-            StringWriter stringWriter = new StringWriter();
-            PrintWriter printWriter = new PrintWriter(stringWriter);
-            cause.printStackTrace(printWriter);
-            log(ERR, stringWriter.toString());
-            cause = cause.getCause();
-        }
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        e.printStackTrace(printWriter);
+        log(ERR, message + stringWriter.toString());
     }
 
     private Activity activity;

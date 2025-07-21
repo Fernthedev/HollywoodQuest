@@ -46,6 +46,7 @@ Expand-Archive -Path "app/build/outputs/apk/release/app-release-unsigned.apk" -D
 Move-Item "temp/classes.dex" "../assets/classes.dex" -Force
 Remove-Item -Path "temp" -Recurse
 Set-Location ..
+(Get-Item "assets/classes.dex").LastWriteTime = (Get-Date)
 
 $def = "OFF"
 if ($glDebug.IsPresent) {
