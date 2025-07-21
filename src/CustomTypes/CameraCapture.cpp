@@ -228,13 +228,6 @@ void CameraCapture::Update() {
         long gameDeltaInSamples = gameDelta * sampleRate;
         if (gameDeltaInSamples < dspDelta + (sampleRate * 0.1))
             break;
-        logger.debug(
-            "sleeping game thread ({})! game {} >= dsp {} + {}",
-            std::hash<std::thread::id>()(std::this_thread::get_id()),
-            gameDeltaInSamples,
-            dspDelta,
-            (sampleRate * 0.1)
-        );
         // game time is too far ahead, pause for audio
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }

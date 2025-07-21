@@ -41,9 +41,6 @@ MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
             logger.warn("main thread timed out! allowing audio to continue...");
             break;
         }
-        logger.debug(
-            "sleeping audio thread ({})! dsp {} >= game {}", std::hash<std::thread::id>()(std::this_thread::get_id()), dspDelta, gameDeltaInSamples
-        );
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 
