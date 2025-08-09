@@ -240,3 +240,7 @@ void CameraCapture::OnDestroy() {
     if (texture)
         Object::Destroy(texture);
 }
+
+float CameraCapture::GetRenderTime() {
+    return Time::get_time() - startTime;
+}

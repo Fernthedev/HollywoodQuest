@@ -32,6 +32,7 @@ void AudioWriter::Initialize(int channelsIn, int sampleRateIn) {
     channels = channelsIn;
     sampleRate = sampleRateIn;
     limiter.init(channels, sampleRate);
+    written = 0;
 }
 
 void AudioWriter::Write(ArrayW<float> audioData) {
@@ -41,6 +42,7 @@ void AudioWriter::Write(ArrayW<float> audioData) {
         // limit the data to between -1 and 1 (unity says the data will be in this range already but it lies)
         float limited = limiter.process(value);
         WriteStream<short>(writer, limited * std::numeric_limits<short>::max());
+        written += sizeof(short);
     }
 }
 
@@ -48,15 +50,13 @@ void AudioWriter::Close() {
     if (!initialized || !writer.is_open())
         return;
 
-    long size = (long) writer.tellp();
-
     // go back to start of file
     writer.seekp(0);
 
     WriteStream<int>(writer, 0x46464952);  // "RIFF" in ASCII
 
     // number of bytes in the entire file
-    WriteStream<int>(writer, size);
+    WriteStream<int>(writer, written + HEADER_SIZE);
 
     WriteStream<int>(writer, 0x45564157);  // "WAVE" in ASCII
     WriteStream<int>(writer, 0x20746d66);  // "fmt " in ASCII
@@ -79,10 +79,15 @@ void AudioWriter::Close() {
     WriteStream<int>(writer, 0x61746164);  // "data" in ASCII
 
     // number of bytes in the data portion
-    WriteStream<int>(writer, size - HEADER_SIZE);
+    WriteStream<int>(writer, written);
 
     writer.close();
     initialized = false;
+}
+
+float AudioWriter::GetWrittenTime() const {
+    int samples = written / (channels * BITS_PER_SAMPLE / 8);
+    return samples / (float) sampleRate;
 }
 
 void AudioCapture::Update() {

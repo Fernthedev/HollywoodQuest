@@ -12,6 +12,7 @@ namespace Hollywood {
         void Initialize(int channels, int sampleRate);
         void Write(ArrayW<float> audioData);
         void Close();
+        float GetWrittenTime() const;
 
         static constexpr int HEADER_SIZE = 44;
         static constexpr short BITS_PER_SAMPLE = 16;
@@ -22,6 +23,7 @@ namespace Hollywood {
         int sampleRate;
         SimpleLimiter limiter;
         std::ofstream writer;
+        int written;
     };
 }
 
@@ -45,6 +47,9 @@ DECLARE_CLASS_CODEGEN(Hollywood, AudioCapture, UnityEngine::MonoBehaviour) {
 
     bool IsRendering() const {
         return rendering;
+    }
+    float GetRenderTime() const {
+        return writer.GetWrittenTime();
     }
 
    private:

@@ -15,6 +15,7 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour) {
     DECLARE_INSTANCE_METHOD(void, Stop);
     DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(void, OnDestroy);
+    DECLARE_INSTANCE_METHOD(float, GetRenderTime);
 
     DECLARE_INSTANCE_FIELD(UnityEngine::Camera*, camera);
     DECLARE_INSTANCE_FIELD(UnityEngine::RenderTexture*, texture);
