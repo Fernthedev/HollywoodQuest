@@ -187,7 +187,7 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
 
     sampleRate = AudioSettings::get_outputSampleRate();
     startGameTime = currentGameTime = Time::get_time();
-    startDspClock = AudioSettings::get_dspTime() * sampleRate;
+    startDspClock = GetDSPClock();
 }
 
 void CameraCapture::Stop() {
@@ -226,7 +226,7 @@ void CameraCapture::Update() {
         long dspDelta = GetDSPClock() - startDspClock;
         float gameDelta = currentGameTime - startGameTime;
         long gameDeltaInSamples = gameDelta * sampleRate;
-        if (gameDeltaInSamples < dspDelta + (sampleRate * 0.1))
+        if (gameDeltaInSamples < dspDelta + 1)
             break;
         // game time is too far ahead, pause for audio
         std::this_thread::sleep_for(std::chrono::milliseconds(5));

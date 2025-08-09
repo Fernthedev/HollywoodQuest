@@ -112,7 +112,6 @@ void AudioCapture::OpenFile(std::string const& filename) {
     sampleRate = UnityEngine::AudioSettings::get_outputSampleRate();
     startGameTime = currentGameTime = UnityEngine::Time::get_time();
     startDspClock = GetDSPClock();
-    logger.debug("unity dsp time {} vs internal {}", UnityEngine::AudioSettings::get_dspTime() * sampleRate, GetDSPClock());
 }
 
 void AudioCapture::Save() {
