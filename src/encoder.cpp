@@ -11,7 +11,7 @@ AMediaCodec* Hollywood::CreateEncoder(int width, int height, int bitrate, int fp
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, mime);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, 0x7f000789);  // COLOR_FormatSurface
     AMediaFormat_setFloat(format, AMEDIAFORMAT_KEY_FRAME_RATE, fps);
-    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_I_FRAME_INTERVAL, 30);
+    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_I_FRAME_INTERVAL, 3);
 
     auto encoder = AMediaCodec_createEncoderByType(mime);
     if (!encoder) {
