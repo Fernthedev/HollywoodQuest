@@ -1,7 +1,6 @@
 #include "java.hpp"
 
 #include "assets.hpp"
-#include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
 #include "main.hpp"
 #include "metacore/shared/java.hpp"
 #include "scotland2/shared/modloader.h"

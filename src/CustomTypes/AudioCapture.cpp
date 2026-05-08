@@ -1,9 +1,10 @@
 #include "CustomTypes/AudioCapture.hpp"
 
-#include "UnityEngine/AudioSettings.hpp"
-#include "UnityEngine/Time.hpp"
 #include "hollywood.hpp"
 #include "main.hpp"
+
+#include "UnityEngine/AudioSettings.hpp"
+#include "UnityEngine/Time.hpp"
 
 using namespace Hollywood;
 

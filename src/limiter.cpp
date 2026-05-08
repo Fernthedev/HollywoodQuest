@@ -1,10 +1,9 @@
 #include "limiter.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 
-using namespace Hollywood;
-
-void SimpleLimiter::init(int channels, int smoothness) {
+void Hollywood::SimpleLimiter::init(int channels, int smoothness) {
     this->channels = channels;
     if (smoothness > 0)
         decrease = 1 / (float) smoothness;
@@ -13,7 +12,7 @@ void SimpleLimiter::init(int channels, int smoothness) {
     clear();
 }
 
-float SimpleLimiter::process(float data) {
+float Hollywood::SimpleLimiter::process(float data) {
     float gain = std::abs(data);
     if (gain > max)
         max = gain;
@@ -23,7 +22,7 @@ float SimpleLimiter::process(float data) {
     return data / max;
 }
 
-void SimpleLimiter::clear() {
+void Hollywood::SimpleLimiter::clear() {
     channel = 0;
     max = 1;
 }

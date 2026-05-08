@@ -1,8 +1,7 @@
 #pragma once
 
-#include <GLES3/gl3.h>
-
 #include <string_view>
+#include <GLES3/gl3.h>
 
 namespace Hollywood {
     struct Shader {

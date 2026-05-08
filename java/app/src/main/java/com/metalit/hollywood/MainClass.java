@@ -66,8 +66,8 @@ public class MainClass {
     public MainClass() {
         log(DBG, "Initializing MainClass");
 
-        activity = UnityPlayer.currentActivity;
-        context = getUnityPlayer().getContext();
+        // activity = UnityPlayer.currentActivity;
+        // context = getUnityPlayer().getContext();
 
         try {
             Bypass.unseal();

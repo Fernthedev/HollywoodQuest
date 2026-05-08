@@ -24,9 +24,12 @@ Their recording software has gotten better since the original creation of this l
 
 - Clone repository
 - `qpm restore`
+- `qpm ndk resolve`
 - `python3 ./update_ffmpeg.py`
-- `qpm s build`
+- `qpm qmod zip`
 - Profit
+
+Note: `unity.jar` is from `Program Files\Unity\Hub\Editor\<version>\Editor\Data\PlaybackEngines\AndroidPlayer\Variations\il2cpp\Release\Classes\classes.jar`.
 
 ## Credits to
 

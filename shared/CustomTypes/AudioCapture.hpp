@@ -1,10 +1,11 @@
 #pragma once
 
+#include "../limiter.hpp"
+#include "custom-types/shared/macros.hpp"
+
 #include <fstream>
 
-#include "../limiter.hpp"
 #include "UnityEngine/MonoBehaviour.hpp"
-#include "custom-types/shared/macros.hpp"
 
 namespace Hollywood {
     struct AudioWriter {

@@ -1,11 +1,12 @@
 #pragma once
 
+#include "custom-types/shared/macros.hpp"
+
 #include <media/NdkMediaCodec.h>
 
 #include "UnityEngine/Camera.hpp"
 #include "UnityEngine/MonoBehaviour.hpp"
 #include "UnityEngine/RenderTexture.hpp"
-#include "custom-types/shared/macros.hpp"
 
 DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour) {
     DECLARE_DEFAULT_CTOR();

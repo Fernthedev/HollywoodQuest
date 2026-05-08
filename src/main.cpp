@@ -1,9 +1,8 @@
 #include "main.hpp"
 
-#include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
-#include "custom-types/shared/register.hpp"
-#include "hooks.hpp"
 #include "java.hpp"
+#include "beatsaber-hook/shared/api.hpp"
+#include "custom-types/shared/register.hpp"
 
 bool syncTimes = false;
 
@@ -13,7 +12,7 @@ long startDspClock = 0;
 int sampleRate = 0;
 
 void IssuePluginEvent(void (*function)(int), int id) {
-    static auto icall = il2cpp_utils::resolve_icall<void, void*, int>("UnityEngine.GL::GLIssuePluginEvent");
+    static auto icall = i2c::resolve_icall<void, void*, int>("UnityEngine.GL::GLIssuePluginEvent");
     icall((void*) function, id);
 }
 
@@ -26,8 +25,7 @@ extern "C" void setup(CModInfo* info) {
 }
 
 extern "C" void late_load() {
-    il2cpp_functions::Init();
     custom_types::Register::AutoRegister();
-    Hooks::Install();
+    Hollywood::InstallHook();
     Hollywood::LoadClassAsset();
 }

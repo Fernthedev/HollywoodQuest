@@ -1,11 +1,13 @@
 #include "hollywood.hpp"
 
-#include "UnityEngine/AudioSettings.hpp"
-#include "UnityEngine/Time.hpp"
-#include "hooks.hpp"
 #include "java.hpp"
 #include "main.hpp"
 #include "mux.hpp"
+#include "beatsaber-hook/shared/binary.hpp"
+#include "beatsaber-hook/shared/hooking.hpp"
+
+#include "UnityEngine/AudioSettings.hpp"
+#include "UnityEngine/Time.hpp"
 
 static constexpr int TIMEOUT_LOOPS = 200;  // theoretically a bit over a second, given 5ms sleeps
 
@@ -15,7 +17,7 @@ static int timeout = 0;
 static long currentGameDelta = 0;
 
 // I'm pretty sure this is the same thread as OnAudioFilterRead, but if I sleep there, it locks up
-MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
+MAKE_HOOK(fmod_output_mix, (nullptr), int, char* output, void* p1, uint p2) {
 
     if (output != gOutput) {
         logger.debug("setting output to {}", fmt::ptr(output));
@@ -47,20 +49,22 @@ MAKE_HOOK_NO_CATCH(fmod_output_mix, 0x0, int, char* output, void* p1, uint p2) {
     return fmod_output_mix(output, p1, p2);
 }
 
-AUTO_INSTALL_FUNCTION(fmod_output_mix) {
+void Hollywood::InstallHook() {
     logger.info("Installing audio mix hook...");
-    uintptr_t libunity = baseAddr("libunity.so");
-    uintptr_t fmod_output_mix_addr = findPattern(
+    uintptr_t libunity = i2c::binary::base_addr("libunity.so");
+    uintptr_t fmod_output_mix_addr = i2c::binary::find_pattern(
         libunity, "ff 43 03 d1 a8 04 80 52 ed 33 04 6d eb 2b 05 6d e9 23 06 6d fc 6f 07 a9 fa 67 08 a9 f8 5f 09 a9 f6 57 0a a9 f4 4f", 0x2000000
     );
     logger.info("Found audio mix address: {}", fmod_output_mix_addr);
-    INSTALL_HOOK_DIRECT(logger, fmod_output_mix, (void*) fmod_output_mix_addr);
+    // TODO: Fix probably
+    // INSTALL_HOOK(logger, fmod_output_mix, (void*) fmod_output_mix_addr);
     logger.info("Installed audio mix hook!");
 }
 
 long Hollywood::GetDSPClock() {
-    char* system = *(char**) (gOutput + 0x60);
-    return *(long*) (system + 0xc78);
+    return 0;
+    // char* system = *(char**) (gOutput + 0x60);
+    // return *(long*) (system + 0xc78);
 }
 
 void Hollywood::SetSyncTimes(bool value) {

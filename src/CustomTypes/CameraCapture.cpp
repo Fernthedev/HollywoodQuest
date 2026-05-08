@@ -1,5 +1,13 @@
 #include "CustomTypes/CameraCapture.hpp"
 
+#include "assets.hpp"
+#include "egl.hpp"
+#include "encoder.hpp"
+#include "hollywood.hpp"
+#include "main.hpp"
+#include "shader.hpp"
+#include "thread_map.hpp"
+
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include <android/native_window.h>
@@ -17,13 +25,6 @@
 #include "UnityEngine/TextureWrapMode.hpp"
 #include "UnityEngine/Time.hpp"
 #include "UnityEngine/Vector3.hpp"
-#include "assets.hpp"
-#include "egl.hpp"
-#include "encoder.hpp"
-#include "hollywood.hpp"
-#include "main.hpp"
-#include "shader.hpp"
-#include "thread_map.hpp"
 
 DEFINE_TYPE(Hollywood, CameraCapture);
 
@@ -174,7 +175,7 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
         return;
     }
 
-    int texId = (uintptr_t) texture->GetNativeTexturePtr().m_value.convert();
+    int texId = (uintptr_t) texture->GetNativeTexturePtr().m_value;
     dataId = dataMap.add(width, height, texId, encoder, window);
 
     fpsDelta = fps > 0 ? 1 / (double) fps : -1;

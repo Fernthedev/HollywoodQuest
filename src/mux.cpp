@@ -7,7 +7,7 @@ extern "C" {
 #include "libswresample/swresample.h"
 }
 
-#include "beatsaber-hook/shared/utils/utils-functions.h"
+#include "beatsaber-hook/shared/utils.hpp"
 
 // https://stackoverflow.com/questions/16768794/muxing-from-audio-and-video-files-with-ffmpeg
 // https://github.com/FFmpeg/FFmpeg/blob/master/doc/examples/transcode_aac.c
@@ -49,7 +49,7 @@ namespace Muxer {
 #define CASE_STR(value) \
     case AV_LOG_##value: return #value
 
-    static inline const char* levelString(int level) {
+    static inline char const* levelString(int level) {
         switch (level) {
             CASE_STR(QUIET);
             CASE_STR(PANIC);

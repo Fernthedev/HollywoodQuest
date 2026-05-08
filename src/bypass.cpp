@@ -1,10 +1,9 @@
-#include <android/log.h>
+#include "scotland2/shared/modloader.h"
 
 #include <future>
+#include <android/log.h>
 #include <java.hpp>
 #include <main.hpp>
-
-#include "scotland2/shared/modloader.h"
 
 // some weird threading stuff idk I got this from https://github.com/ChickenHook/RestrictionBypass/tree/master
 

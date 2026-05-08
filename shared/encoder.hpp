@@ -1,8 +1,7 @@
 #pragma once
 
-#include <media/NdkMediaCodec.h>
-
 #include <functional>
+#include <media/NdkMediaCodec.h>
 
 namespace Hollywood {
     AMediaCodec* CreateEncoder(int width, int height, int bitrate, int fps = -1, char const* mime = "video/avc");

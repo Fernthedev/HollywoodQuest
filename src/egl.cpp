@@ -1,10 +1,10 @@
 #include "egl.hpp"
 
+#include "main.hpp"
+
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES3/gl32.h>
-
-#include "main.hpp"
 
 Hollywood::EGLState::EGLState() {
     display = eglGetCurrentDisplay();

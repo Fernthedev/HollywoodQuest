@@ -1,6 +1,6 @@
 #pragma once
 
-#include "beatsaber-hook/shared/utils/logging.hpp"
+#include "paper2_scotland2/shared/logger.hpp"
 
 constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);
 
@@ -12,3 +12,7 @@ extern long startDspClock;
 extern int sampleRate;
 
 void IssuePluginEvent(void (*function)(int), int id);
+
+namespace Hollywood {
+    void InstallHook();
+}
