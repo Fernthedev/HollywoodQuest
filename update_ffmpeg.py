@@ -1,105 +1,113 @@
 # Downloads the FFMPEG-Kit files compiled using `--speed` by Github CI
 # Script by Fern ;)
 
-# pip install PyGithub
+
+def check_imports():
+    import_error = False
+    try:
+        import github as _
+    except ImportError:
+        print("Missing PyGithub! (pip install PyGithub)")
+        import_error = True
+    try:
+        import requests as _
+    except ImportError:
+        print("Missing requests! (pip install requests)")
+        import_error = True
+    return not import_error
+
+
+if not check_imports():
+    exit(1)
+
+
 from github import Github
-
-# pip install requests
-import requests  # For downloading files
-
+import json
 import os
+import requests
 import shutil
 import zipfile
-import json
 
-repository = Github().get_repo('Fernthedev/ffmpeg-kit-speed')
-
+repository = Github().get_repo("Fernthedev/ffmpeg-kit-speed")
 release = repository.get_release("v4.4.1")  # Update as needed
 
-releaseLibrariesAssetName = "ffmpeg-kit.aar"
-releaseHeadersAssetName = "ffmpeg-kit-headers.zip"
+libraries_asset_name = "ffmpeg-kit.aar"
+headers_asset_name = "ffmpeg-kit-headers.zip"
 
-ffmpegFolder = os.path.join(os.getcwd(), "ffmpeg")
-ffmpegTempFolder = os.path.join(os.getcwd(), "ffmpeg_temp")
+ffmpeg_folder = os.path.join(os.getcwd(), "ffmpeg")
+temp_folder = os.path.join(os.getcwd(), "ffmpeg_temp")
 
 assets = release.get_assets()
 
-modjson = None
-with open("./mod.template.json", 'r') as f:
+with open("./mod.template.json", "r") as f:
     modjson = json.load(f)
 
 
-def download_zip(asset_name):
+def download_zip(asset_name: str):
     print(f"Downloading {asset_name}")
-    zip_file = ""
-
-    # Find FFMPEG and download it
     for asset in assets:
         if asset.name == asset_name:
             zip_file = asset.name
             r = requests.get(asset.browser_download_url, allow_redirects=True)
-            open(zip_file, 'wb').write(r.content)
+            with open(zip_file, "wb") as f:
+                f.write(r.content)
+            break
+    else:
+        print("Unable to find asset:", asset_name)
+        exit(1)
 
-    if zip_file == "":
-        raise Exception('Unable to find zip file ' + asset_name)
 
-
-if os.path.exists(ffmpegTempFolder):
+if os.path.exists(temp_folder):
     print("Clearing temp folder!")
-    shutil.rmtree(ffmpegTempFolder)
+    shutil.rmtree(temp_folder)
 
 print("Downloading zips")
-download_zip(releaseLibrariesAssetName)
-download_zip(releaseHeadersAssetName)
+download_zip(libraries_asset_name)
+download_zip(headers_asset_name)
 
-print("Clearing folder")
+print("Clearing old FFMPEG folder")
 # Clear folder
-if os.path.isfile(ffmpegFolder):
-    os.remove(ffmpegFolder)
+if os.path.isfile(ffmpeg_folder):
+    os.remove(ffmpeg_folder)
+shutil.rmtree(ffmpeg_folder)
 
 print("Creating folders")
 # Create folder
-os.makedirs(ffmpegFolder, exist_ok=True)
-os.makedirs(ffmpegTempFolder, exist_ok=True)
+os.makedirs(temp_folder)
+os.makedirs(ffmpeg_folder)
 
 
-def unzip_file(zip_name):
+def unzip_file(zip_name: str):
     print(f"Unzipping {zip_name}")
     # Unzip
-    with zipfile.ZipFile(zip_name, 'r') as zipObj:
+    with zipfile.ZipFile(zip_name, "r") as z:
         # Extract all the contents of zip file in current directory
-        zipObj.extractall(ffmpegTempFolder)
+        z.extractall(temp_folder)
 
 
 print("Unzipping files")
-unzip_file(releaseHeadersAssetName)
-unzip_file(releaseLibrariesAssetName)
-
-print("Clearing old FFMPEG folder")
-shutil.rmtree(ffmpegFolder)
-os.makedirs(ffmpegFolder)
+unzip_file(headers_asset_name)
+unzip_file(libraries_asset_name)
 
 # Reorganize files
 print("Moving library files")
-ffmpegTempLibs = os.path.join(os.path.join(ffmpegTempFolder, "jni"), "arm64-v8a")
-for filename in os.listdir(ffmpegTempLibs):
+temp_libs = os.path.join(os.path.join(temp_folder, "jni"), "arm64-v8a")
+for filename in os.listdir(temp_libs):
     if filename not in modjson["libraryFiles"]:
         continue
-    file_path = os.path.join(ffmpegTempLibs, filename)
-    print(f"Moving file {file_path} to {ffmpegFolder}")
-    os.rename(file_path, os.path.join(ffmpegFolder, filename))
+    file_path = os.path.join(temp_libs, filename)
+    print(f"Moving file {file_path} -> {ffmpeg_folder}")
+    os.rename(file_path, os.path.join(ffmpeg_folder, filename))
 
 print("Moving header files")
-ffmpegTempHeaders = os.path.join(ffmpegTempFolder, "include")
-for filename in os.listdir(ffmpegTempHeaders):
-    file_path = os.path.join(ffmpegTempHeaders, filename)
-    print(f"Moving file {file_path} to {ffmpegFolder}")
-    os.rename(file_path, os.path.join(ffmpegFolder, filename))
+temp_headers = os.path.join(temp_folder, "include")
+for filename in os.listdir(temp_headers):
+    file_path = os.path.join(temp_headers, filename)
+    print(f"Moving file {file_path} -> {ffmpeg_folder}")
+    os.rename(file_path, os.path.join(ffmpeg_folder, filename))
 
 # Delete temp files
-print("Cleaning up zip files!")
-os.remove(releaseLibrariesAssetName)
-os.remove(releaseHeadersAssetName)
-
-print("No more temp folder!")
-shutil.rmtree(ffmpegTempFolder)
+print("Cleaning up")
+os.remove(libraries_asset_name)
+os.remove(headers_asset_name)
+shutil.rmtree(temp_folder)
