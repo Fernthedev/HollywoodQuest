@@ -46,7 +46,7 @@
   "dependencies": [
     {
       "id": "mod-scripts",
-      "versionRange": "^1.0.0",
+      "versionRange": "^1.0.1",
       "additionalData": {}
     },
     {

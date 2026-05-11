@@ -17,7 +17,7 @@
     "workspace": {
       "scripts": {
         "build": [
-          "python ./extern/includes/mod-scripts/shared/build.py $0:?"
+          "python ./extern/includes/mod-scripts/shared/build.py -j java $0:?"
         ],
         "copy": [
           "python ./extern/includes/mod-scripts/shared/cpy.py $0:?"
@@ -48,7 +48,7 @@
     "dependencies": [
       {
         "id": "mod-scripts",
-        "versionRange": "^1.0.0",
+        "versionRange": "^1.0.1",
         "additionalData": {}
       },
       {
@@ -105,14 +105,14 @@
     {
       "dependency": {
         "id": "mod-scripts",
-        "versionRange": "=1.0.0",
+        "versionRange": "=1.0.1",
         "additionalData": {
           "headersOnly": true,
-          "branchName": "version/v1_0_0",
+          "branchName": "version/v1_0_1",
           "cmake": false
         }
       },
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "dependency": {
