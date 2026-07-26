@@ -187,9 +187,10 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
     int texId = (uintptr_t) texture->GetNativeTexturePtr().m_value.convert();
     dataId = dataMap.add(width, height, texId, encoder, window);
 
-    fpsDelta = fps > 0 ? 1 / (double) fps : -1;
+    fpsDelta = fps > 0 ? 1 / (double) fps : 0;
     // bias against skipping frames if target fps is similar enough to unity fps
     startTime = Time::get_time() - fpsDelta / 2;
+    fpsChangeOffset = 0;
     frames = 0;
 
     stopThread = false;
@@ -198,6 +199,18 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
     sampleRate = AudioSettings::get_outputSampleRate();
     startGameTime = currentGameTime = Time::get_time();
     startDspClock = GetDSPClock();
+}
+
+void CameraCapture::UpdateFPS(int fps) {
+    double time = fpsDelta * frames + fpsChangeOffset;
+    fpsDelta = fps > 0 ? 1 / (double) fps : 0;
+    fpsChangeOffset = time - fpsDelta * frames;
+}
+
+void CameraCapture::UpdateFOV(float fov) {
+    if (!camera)
+        Awake();
+    camera->fieldOfView = fov;
 }
 
 void CameraCapture::Stop() {
@@ -221,7 +234,7 @@ void CameraCapture::Update() {
         return;
 
     bool doFrame = true;
-    if (fpsDelta > 0 && Time::get_time() - startTime < fpsDelta * frames)
+    if (fpsDelta > 0 && Time::get_time() < fpsDelta * frames + startTime + fpsChangeOffset)
         doFrame = false;
 
     // camera->Render horribly breaks the texture, probably because of threading

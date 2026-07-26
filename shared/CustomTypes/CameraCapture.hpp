@@ -12,6 +12,8 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour) {
 
     DECLARE_INSTANCE_METHOD(void, Awake);
     DECLARE_INSTANCE_METHOD(void, Init, int width, int height, int fps, int bitrate, float fov, bool hevc = false);
+    DECLARE_INSTANCE_METHOD(void, UpdateFPS, int fps);
+    DECLARE_INSTANCE_METHOD(void, UpdateFOV, float fov);
     DECLARE_INSTANCE_METHOD(void, Stop);
     DECLARE_INSTANCE_METHOD(void, Update);
     DECLARE_INSTANCE_METHOD(void, OnDestroy);
@@ -28,6 +30,7 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour) {
     ANativeWindow* window;
     double fpsDelta;
     float startTime;
+    float fpsChangeOffset;
     int frames;
 
     int dataId = -1;
