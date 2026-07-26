@@ -131,8 +131,18 @@ void CameraCapture::Awake() {
 void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov, bool hevc) {
     if (!camera)
         Awake();
-    if (!camera || dataId != -1)
+    if (!camera) {
+        logger.error("CameraCapture must have a Camera component");
         return;
+    }
+    if (dataId != -1) {
+        logger.error("CameraCapture must be stopped before calling Init()");
+        return;
+    }
+    if (!onOutputUnit) {
+        logger.error("CameraCapture must have a valid onOutputUnit");
+        return;
+    }
 
     logger.info("Making video capture");
     logger.debug("size {}/{} fps {} bitrate {} fov {} hevc {}", width, height, fps, bitrate, fov, hevc);
@@ -162,14 +172,14 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
     ANativeWindow* window;
     auto err = AMediaCodec_createInputSurface(encoder, &window);
     if (err != AMEDIA_OK) {
-        logger.error("Failed to create input surface: {}", (int) err);
+        logger.error("Failed to create input surface: {} ({})", MediaErrorString(err), (int) err);
         AMediaCodec_delete(encoder);
         return;
     }
 
     err = AMediaCodec_start(encoder);
     if (err != AMEDIA_OK) {
-        logger.error("Failed to start encoder: {}", (int) err);
+        logger.error("Failed to start encoder: {} ({})", MediaErrorString(err), (int) err);
         AMediaCodec_delete(encoder);
         return;
     }

@@ -25,11 +25,11 @@ AMediaCodec* Hollywood::CreateEncoder(int width, int height, int bitrate, int fp
     logger.debug("Using encoder {}", name);
     AMediaCodec_releaseName(encoder, name);
 
-    media_status_t err = AMediaCodec_configure(encoder, format, NULL, NULL, AMEDIACODEC_CONFIGURE_FLAG_ENCODE);
+    auto err = AMediaCodec_configure(encoder, format, NULL, NULL, AMEDIACODEC_CONFIGURE_FLAG_ENCODE);
     AMediaFormat_delete(format);
 
     if (err != AMEDIA_OK) {
-        logger.error("Configure error: {}", (int) err);
+        logger.error("Configure error: {} ({})", MediaErrorString(err), (int) err);
         AMediaCodec_delete(encoder);
         return nullptr;
     }
