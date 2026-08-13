@@ -64,7 +64,7 @@
     },
     {
       "id": "flamingo",
-      "versionRange": "^1.1.2",
+      "versionRange": "^1.2.1",
       "additionalData": {}
     },
     {
@@ -80,6 +80,11 @@
     {
       "id": "custom-types",
       "versionRange": "^0.20.0",
+      "additionalData": {}
+    },
+    {
+      "id": "bs-cordl",
+      "versionRange": "^4403.0.0",
       "additionalData": {}
     }
   ]
