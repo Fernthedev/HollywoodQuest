@@ -52,19 +52,18 @@ MAKE_HOOK(fmod_output_mix, (nullptr), int, char* output, void* p1, uint p2) {
 void Hollywood::InstallHook() {
     logger.info("Installing audio mix hook...");
     uintptr_t libunity = i2c::binary::base_addr("libunity.so");
+    // Seems fairly consistent across unity versions
     uintptr_t fmod_output_mix_addr = i2c::binary::find_pattern(
         libunity, "ff 43 03 d1 a8 04 80 52 ed 33 04 6d eb 2b 05 6d e9 23 06 6d fc 6f 07 a9 fa 67 08 a9 f8 5f 09 a9 f6 57 0a a9 f4 4f", 0x2000000
     );
     logger.info("Found audio mix address: {}", fmod_output_mix_addr);
-    // TODO: Fix probably
-    // INSTALL_HOOK(logger, fmod_output_mix, (void*) fmod_output_mix_addr);
+    INSTALL_HOOK(logger, fmod_output_mix, (void*) fmod_output_mix_addr);
     logger.info("Installed audio mix hook!");
 }
 
 long Hollywood::GetDSPClock() {
-    return 0;
-    // char* system = *(char**) (gOutput + 0x60);
-    // return *(long*) (system + 0xc78);
+    char* system = *(char**) (gOutput + 0x60);
+    return *(long*) (system + 0xc78);
 }
 
 void Hollywood::SetSyncTimes(bool value) {
