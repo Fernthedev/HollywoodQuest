@@ -12,7 +12,7 @@ long startDspClock = 0;
 int sampleRate = 0;
 
 void IssuePluginEvent(void (*function)(int), int id) {
-    static auto icall = i2c::resolve_icall<void, void*, int>("UnityEngine.GL::GLIssuePluginEvent");
+    static auto icall = i2c::resolve_icall<void, void*, int>("UnityEngine.GL::GLIssuePluginEvent").value();
     icall((void*) function, id);
 }
 
