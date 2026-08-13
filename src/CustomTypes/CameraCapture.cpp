@@ -132,8 +132,18 @@ void CameraCapture::Awake() {
 void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov, bool hevc) {
     if (!camera)
         Awake();
-    if (!camera || dataId != -1)
+    if (!camera) {
+        logger.error("CameraCapture must have a Camera component");
         return;
+    }
+    if (dataId != -1) {
+        logger.error("CameraCapture must be stopped before calling Init()");
+        return;
+    }
+    if (!onOutputUnit) {
+        logger.error("CameraCapture must have a valid onOutputUnit");
+        return;
+    }
 
     logger.info("Making video capture");
     logger.debug("size {}/{} fps {} bitrate {} fov {} hevc {}", width, height, fps, bitrate, fov, hevc);
@@ -163,14 +173,14 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
     ANativeWindow* window;
     auto err = AMediaCodec_createInputSurface(encoder, &window);
     if (err != AMEDIA_OK) {
-        logger.error("Failed to create input surface: {}", (int) err);
+        logger.error("Failed to create input surface: {} ({})", MediaErrorString(err), (int) err);
         AMediaCodec_delete(encoder);
         return;
     }
 
     err = AMediaCodec_start(encoder);
     if (err != AMEDIA_OK) {
-        logger.error("Failed to start encoder: {}", (int) err);
+        logger.error("Failed to start encoder: {} ({})", MediaErrorString(err), (int) err);
         AMediaCodec_delete(encoder);
         return;
     }
@@ -178,9 +188,10 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
     int texId = (uintptr_t) texture->GetNativeTexturePtr().m_value;
     dataId = dataMap.add(width, height, texId, encoder, window);
 
-    fpsDelta = fps > 0 ? 1 / (double) fps : -1;
+    fpsDelta = fps > 0 ? 1 / (double) fps : 0;
     // bias against skipping frames if target fps is similar enough to unity fps
     startTime = Time::get_time() - fpsDelta / 2;
+    fpsChangeOffset = 0;
     frames = 0;
 
     stopThread = false;
@@ -189,6 +200,18 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
     sampleRate = AudioSettings::get_outputSampleRate();
     startGameTime = currentGameTime = Time::get_time();
     startDspClock = GetDSPClock();
+}
+
+void CameraCapture::UpdateFPS(int fps) {
+    double time = fpsDelta * frames + fpsChangeOffset;
+    fpsDelta = fps > 0 ? 1 / (double) fps : 0;
+    fpsChangeOffset = time - fpsDelta * frames;
+}
+
+void CameraCapture::UpdateFOV(float fov) {
+    if (!camera)
+        Awake();
+    camera->fieldOfView = fov;
 }
 
 void CameraCapture::Stop() {
@@ -212,7 +235,7 @@ void CameraCapture::Update() {
         return;
 
     bool doFrame = true;
-    if (fpsDelta > 0 && Time::get_time() - startTime < fpsDelta * frames)
+    if (fpsDelta > 0 && Time::get_time() < fpsDelta * frames + startTime + fpsChangeOffset)
         doFrame = false;
 
     // camera->Render horribly breaks the texture, probably because of threading
