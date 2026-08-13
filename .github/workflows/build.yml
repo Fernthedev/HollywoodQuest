@@ -68,7 +68,7 @@ jobs:
       - name: Build & create qmod
         run: |
           cd ${GITHUB_WORKSPACE}
-          qpm s qmod
+          qpm qmod zip
 
       - name: Get Library Name
         id: libname
