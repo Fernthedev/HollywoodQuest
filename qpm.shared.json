@@ -60,7 +60,7 @@
       },
       {
         "id": "paper2_scotland2",
-        "versionRange": "^4.7.0",
+        "versionRange": "^4.8.0",
         "additionalData": {}
       },
       {
@@ -85,67 +85,12 @@
       },
       {
         "id": "bs-cordl",
-        "versionRange": "^4403.0.0",
+        "versionRange": "^4500.0.0",
         "additionalData": {}
       }
     ]
   },
   "restoredDependencies": [
-    {
-      "dependency": {
-        "id": "custom-types",
-        "versionRange": "=0.20.0",
-        "additionalData": {
-          "soLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.0/libcustom-types.so",
-          "debugSoLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.0/debug_libcustom-types.so",
-          "overrideSoName": "libcustom-types.so",
-          "modLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.0/CustomTypes.qmod",
-          "branchName": "version/v0_20_0",
-          "compileOptions": {
-            "cppFlags": [
-              "-Wno-invalid-offsetof"
-            ]
-          },
-          "cmake": true
-        }
-      },
-      "version": "0.20.0"
-    },
-    {
-      "dependency": {
-        "id": "mod-scripts",
-        "versionRange": "=1.0.1",
-        "additionalData": {
-          "headersOnly": true,
-          "branchName": "version/v1_0_1",
-          "cmake": false
-        }
-      },
-      "version": "1.0.1"
-    },
-    {
-      "dependency": {
-        "id": "bs-cordl",
-        "versionRange": "=4403.0.0",
-        "additionalData": {
-          "headersOnly": true,
-          "branchName": "version/v4403_0_0",
-          "compileOptions": {
-            "includePaths": [
-              "include"
-            ],
-            "cppFeatures": [],
-            "cppFlags": [
-              "-fdeclspec",
-              "-DUNITY_6",
-              "-DHAS_CODEGEN",
-              "-Wno-invalid-offsetof"
-            ]
-          }
-        }
-      },
-      "version": "4403.0.0"
-    },
     {
       "dependency": {
         "id": "libil2cpp",
@@ -161,6 +106,26 @@
         }
       },
       "version": "0.5.0"
+    },
+    {
+      "dependency": {
+        "id": "custom-types",
+        "versionRange": "=0.20.1",
+        "additionalData": {
+          "soLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.1/libcustom-types.so",
+          "debugSoLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.1/debug_libcustom-types.so",
+          "overrideSoName": "libcustom-types.so",
+          "modLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.1/CustomTypes.qmod",
+          "branchName": "version/v0_20_1",
+          "compileOptions": {
+            "cppFlags": [
+              "-Wno-invalid-offsetof"
+            ]
+          },
+          "cmake": true
+        }
+      },
+      "version": "0.20.1"
     },
     {
       "dependency": {
@@ -183,17 +148,50 @@
     },
     {
       "dependency": {
-        "id": "metacore",
-        "versionRange": "=2.0.2",
+        "id": "bs-cordl",
+        "versionRange": "=4500.0.0",
         "additionalData": {
-          "soLink": "https://github.com/Metalit/MetaCore/releases/download/v2.0.2/libmetacore.so",
+          "headersOnly": true,
+          "branchName": "version/v4500_0_0",
+          "compileOptions": {
+            "includePaths": [
+              "include"
+            ],
+            "cppFeatures": [],
+            "cppFlags": [
+              "-fdeclspec",
+              "-DUNITY_6",
+              "-DHAS_CODEGEN",
+              "-Wno-invalid-offsetof"
+            ]
+          }
+        }
+      },
+      "version": "4500.0.0"
+    },
+    {
+      "dependency": {
+        "id": "mod-scripts",
+        "versionRange": "=1.0.2",
+        "additionalData": {
+          "headersOnly": true
+        }
+      },
+      "version": "1.0.2"
+    },
+    {
+      "dependency": {
+        "id": "metacore",
+        "versionRange": "=2.0.3",
+        "additionalData": {
+          "soLink": "https://github.com/Metalit/MetaCore/releases/download/v2.0.3/libmetacore.so",
           "overrideSoName": "libmetacore.so",
-          "modLink": "https://github.com/Metalit/MetaCore/releases/download/v2.0.2/MetaCore.qmod",
-          "branchName": "version/v2_0_2",
+          "modLink": "https://github.com/Metalit/MetaCore/releases/download/v2.0.3/MetaCore.qmod",
+          "branchName": "version/v2_0_3",
           "cmake": true
         }
       },
-      "version": "2.0.2"
+      "version": "2.0.3"
     },
     {
       "dependency": {
@@ -217,13 +215,13 @@
     {
       "dependency": {
         "id": "beatsaber-hook",
-        "versionRange": "=8.1.0",
+        "versionRange": "=8.2.1",
         "additionalData": {
-          "soLink": "https://github.com/QuestPackageManager/beatsaber-hook/releases/download/v8.1.0/libbeatsaber-hook.so",
-          "debugSoLink": "https://github.com/QuestPackageManager/beatsaber-hook/releases/download/v8.1.0/debug_libbeatsaber-hook.so",
+          "soLink": "https://github.com/QuestPackageManager/beatsaber-hook/releases/download/v8.2.1/libbeatsaber-hook.so",
+          "debugSoLink": "https://github.com/QuestPackageManager/beatsaber-hook/releases/download/v8.2.1/debug_libbeatsaber-hook.so",
           "overrideSoName": "libbeatsaber-hook.so",
-          "modLink": "https://github.com/QuestPackageManager/beatsaber-hook/releases/download/v8.1.0/beatsaber-hook.qmod",
-          "branchName": "version/v8_1_0",
+          "modLink": "https://github.com/QuestPackageManager/beatsaber-hook/releases/download/v8.2.1/beatsaber-hook.qmod",
+          "branchName": "version/v8_2_1",
           "compileOptions": {
             "cppFlags": [
               "-Wno-extra-qualification"
@@ -232,7 +230,7 @@
           "cmake": true
         }
       },
-      "version": "8.1.0"
+      "version": "8.2.1"
     },
     {
       "dependency": {
