@@ -38,15 +38,17 @@ struct SharedData {
     AMediaCodec* encoder;
     ANativeWindow* window;
     EGLSurface surface;
+    ANativeWindow* failedWindow;
 
     SharedData(int width, int height, GLuint texture, AMediaCodec* encoder, ANativeWindow* window) :
         width(width),
         height(height),
         texture(texture),
-        buffer(-1),
+        buffer(0),
         encoder(encoder),
         window(window),
-        surface(nullptr) {}
+        surface(nullptr),
+        failedWindow(nullptr) {}
 };
 
 static ThreadMap<SharedData> dataMap;
@@ -56,19 +58,29 @@ static void PluginUpdate(int id) {
     if (!data)
         return;
 
-    // initialize on render thread
-    static Hollywood::Shader gammaShader = {IncludedAssets::gamma_vs_glsl, IncludedAssets::gamma_fs_glsl};
-
+    if (data->window == data->failedWindow)
+        return;
     if (!data->surface) {
         data->surface = MakeSurface(data->window);
-        glGenVertexArrays(1, &data->buffer);
+        if (!data->surface) {
+            data->failedWindow = data->window;
+            return;
+        }
+        data->failedWindow = nullptr;
     }
+    if (!data->buffer)
+        glGenVertexArrays(1, &data->buffer);
+
+    // initialize on render thread
+    static Hollywood::Shader gammaShader = {IncludedAssets::gamma_vs_glsl, IncludedAssets::gamma_fs_glsl};
 
     EGLState state;
     MakeCurrent(data->surface);
 
-    if (gammaShader.Draw(data->width, data->height, data->texture, data->buffer))
-        SwapBuffers(data->surface);
+    if (gammaShader.Draw(data->width, data->height, data->texture, data->buffer)) {
+        if (!SwapBuffers(data->surface))
+            data->surface = nullptr;
+    }
 }
 
 static void PluginDestroy(int id) {
@@ -76,10 +88,10 @@ static void PluginDestroy(int id) {
     if (!data)
         return;
 
-    if (data->surface) {
+    if (data->surface)
         DestroySurface(data->surface);
+    if (data->buffer)
         glDeleteVertexArrays(1, &data->buffer);
-    }
 
     if (data->window)
         ANativeWindow_release(data->window);
@@ -121,31 +133,43 @@ static Matrix4x4 MatrixTranslate(Vector3 const& vector) {
     return result;
 }
 
-void CameraCapture::Awake() {
-    camera = GetComponent<Camera*>();
-
-    if (dataId == -1)
-        camera->enabled = false;
-}
-
-void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov, bool hevc) {
+bool CameraCapture::CanInit() {
     if (!camera)
         Awake();
     if (!camera) {
         logger.error("CameraCapture must have a Camera component");
-        return;
+        return false;
     }
     if (dataId != -1) {
-        logger.error("CameraCapture must be stopped before calling Init()");
-        return;
+        logger.error("CameraCapture must be stopped before calling Init() or Start()");
+        return false;
     }
-    if (!onOutputUnit) {
-        logger.error("CameraCapture must have a valid onOutputUnit");
-        return;
+    return true;
+}
+
+bool CameraCapture::CanStart() {
+    if (!CanInit())
+        return false;
+    if (!texture) {
+        logger.error("CameraCapture must call Init() before Start()");
+        return false;
     }
+    return true;
+}
+
+void CameraCapture::Awake() {
+    camera = GetComponent<Camera*>();
+
+    if (camera && dataId == -1)
+        camera->enabled = false;
+}
+
+bool CameraCapture::Init(int width, int height, int fps, float fov) {
+    if (!CanInit())
+        return false;
 
     logger.info("Making video capture");
-    logger.debug("size {}/{} fps {} bitrate {} fov {} hevc {}", width, height, fps, bitrate, fov, hevc);
+    logger.debug("size {}/{} fps {} fov {}", width, height, fps, fov);
 
     if (texture)
         Object::Destroy(texture);
@@ -167,38 +191,81 @@ void CameraCapture::Init(int width, int height, int fps, int bitrate, float fov,
 
     camera->enabled = false;
 
+    fpsDelta = fps > 0 ? 1 / (double) fps : 0;
+
+    return true;
+}
+
+bool CameraCapture::StartEncoder(int bitrate, bool hevc) {
+    if (!CanStart())
+        return false;
+    if (!onOutputUnit) {
+        logger.error("CameraCapture must have a valid onOutputUnit to use StartEncoder()");
+        return false;
+    }
+
+    int width = texture->width;
+    int height = texture->height;
+    int fps = std::round(1 / fpsDelta);
+
+    logger.info("Starting video capture to encoder");
+    logger.debug("bitrate {} hevc {}", bitrate, hevc);
+
     encoder = CreateEncoder(width, height, bitrate, fps, hevc ? "video/hevc" : "video/avc");
 
-    ANativeWindow* window;
-    auto err = AMediaCodec_createInputSurface(encoder, &window);
+    media_status_t err = AMediaCodec_createInputSurface(encoder, &window);
     if (err != AMEDIA_OK) {
         logger.error("Failed to create input surface: {} ({})", MediaErrorString(err), (int) err);
         AMediaCodec_delete(encoder);
-        return;
+        return false;
     }
 
     err = AMediaCodec_start(encoder);
     if (err != AMEDIA_OK) {
         logger.error("Failed to start encoder: {} ({})", MediaErrorString(err), (int) err);
         AMediaCodec_delete(encoder);
-        return;
+        return false;
     }
+
+    stopThread = false;
+    thread = std::thread(&EncodeLoop, encoder, onOutputUnit, &stopThread);
+
+    return StartInternal();
+}
+
+bool CameraCapture::StartCapture(void* target) {
+    if (!CanStart())
+        return false;
+    if (!target) {
+        logger.error("CameraCapture must have a valid target for StartCapture()");
+        return false;
+    }
+
+    logger.info("Starting video capture to external surface");
+
+    window = (ANativeWindow*) target;
+    ANativeWindow_acquire(window);
+
+    return StartInternal();
+}
+
+bool CameraCapture::StartInternal() {
+    int width = texture->width;
+    int height = texture->height;
 
     int texId = (uintptr_t) texture->GetNativeTexturePtr().m_value.convert();
     dataId = dataMap.add(width, height, texId, encoder, window);
 
-    fpsDelta = fps > 0 ? 1 / (double) fps : 0;
     // bias against skipping frames if target fps is similar enough to unity fps
     startTime = Time::get_time() - fpsDelta / 2;
     fpsChangeOffset = 0;
     frames = 0;
 
-    stopThread = false;
-    thread = std::thread(&EncodeLoop, encoder, onOutputUnit, &stopThread);
-
     sampleRate = AudioSettings::get_outputSampleRate();
     startGameTime = currentGameTime = Time::get_time();
     startDspClock = GetDSPClock();
+
+    return true;
 }
 
 void CameraCapture::UpdateFPS(int fps) {

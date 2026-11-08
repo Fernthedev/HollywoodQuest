@@ -10,8 +10,14 @@
 DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour) {
     DECLARE_DEFAULT_CTOR();
 
+    DECLARE_INSTANCE_METHOD(bool, CanInit);
+    DECLARE_INSTANCE_METHOD(bool, CanStart);
+
     DECLARE_INSTANCE_METHOD(void, Awake);
-    DECLARE_INSTANCE_METHOD(void, Init, int width, int height, int fps, int bitrate, float fov, bool hevc = false);
+    DECLARE_INSTANCE_METHOD(bool, Init, int width, int height, int fps, float fov);
+    DECLARE_INSTANCE_METHOD(bool, StartEncoder, int bitrate, bool hevc = false);
+    DECLARE_INSTANCE_METHOD(bool, StartCapture, void* target);  // must be ANativeWindow*
+    DECLARE_INSTANCE_METHOD(bool, StartInternal);
     DECLARE_INSTANCE_METHOD(void, UpdateFPS, int fps);
     DECLARE_INSTANCE_METHOD(void, UpdateFOV, float fov);
     DECLARE_INSTANCE_METHOD(void, Stop);
@@ -33,7 +39,7 @@ DECLARE_CLASS_CODEGEN(Hollywood, CameraCapture, UnityEngine::MonoBehaviour) {
     float fpsChangeOffset;
     int frames;
 
-    int dataId = -1;
+    short dataId = -1;
 
     bool stopThread = false;
     std::thread thread;
