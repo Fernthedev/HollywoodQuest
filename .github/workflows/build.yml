@@ -2,13 +2,19 @@ name: Build
 
 env:
   module_id: hollywood
-  qmodName: Hollywood
 
 on:
   workflow_dispatch:
   push:
     branches-ignore:
       - 'version*'
+    paths-ignore:
+      - "**.md"
+      - "**.yml"
+      - ".clangd"
+      - ".clang-format"
+      - ".gitignore"
+      - "!.github/workflows/build.yml"
   pull_request:
 
 jobs:
@@ -16,33 +22,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
         name: Checkout
         with:
           submodules: true
           lfs: true
 
-      - uses: seanmiddleditch/gha-setup-ninja@v3
-
-      - name: Create ndkpath.txt
-        run: |
-          echo "$ANDROID_NDK_LATEST_HOME" > ${GITHUB_WORKSPACE}/ndkpath.txt
-          cat ${GITHUB_WORKSPACE}/ndkpath.txt
-
-      - name: QPM Action
+      - name: Setup QPM
         uses: Fernthedev/qpm-action@v1
         with:
           workflow_token: ${{ secrets.GITHUB_TOKEN }}
-
           restore: true
+          resolve_ndk: true
           cache: true
-
-      - name: List Post Restore
-        run: |
-          echo includes:
-          ls -la ${GITHUB_WORKSPACE}/extern/includes
-          echo libs:
-          ls -la ${GITHUB_WORKSPACE}/extern/libs
 
       - name: Cache FFMPEG
         id: cache-ffmpeg
@@ -65,39 +57,39 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
 
-      - name: Build & create qmod
+      - name: Build & Create QMOD
         run: |
           cd ${GITHUB_WORKSPACE}
           qpm qmod zip
 
-      - name: Get Library Name
-        id: libname
+      - name: Get Output Names
+        id: names
         run: |
-          cd ./build/
+          pattern="*.qmod"
+          files=( $pattern )
+          echo QMOD="${files[0]}" >> $GITHUB_OUTPUT
+          cd build
           pattern="lib${module_id}*.so"
           files=( $pattern )
-          echo NAME="${files[0]}" >> $GITHUB_OUTPUT
-      - name: Rename debug
-        run: |
-          mv ./build/debug/${{ steps.libname.outputs.NAME }} ./build/debug/debug_${{ steps.libname.outputs.NAME }}
+          echo LIB="${files[0]}" >> $GITHUB_OUTPUT
 
-      - name: Upload non-debug artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
         with:
-          name: ${{ steps.libname.outputs.NAME }}
-          path: ./build/${{ steps.libname.outputs.NAME }}
+          name: ${{ steps.names.outputs.LIB }}
+          path: ./build/${{ steps.names.outputs.LIB }}
           if-no-files-found: error
 
-      - name: Upload debug artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Debug Artifact
+        uses: actions/upload-artifact@v6
         with:
-          name: debug_${{ steps.libname.outputs.NAME }}
-          path: ./build/debug/debug_${{ steps.libname.outputs.NAME }}
+          name: debug_${{ steps.names.outputs.LIB }}
+          path: ./build/debug/${{ steps.names.outputs.LIB }}
           if-no-files-found: error
 
-      - name: Upload qmod artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload QMOD Artifact
+        uses: actions/upload-artifact@v6
         with:
-          name: ${{ env.qmodName }}.qmod
-          path: ./${{ env.qmodName }}.qmod
+          name: ${{ steps.names.outputs.QMOD }}
+          path: ./${{ steps.names.outputs.QMOD }}
           if-no-files-found: error

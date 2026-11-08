@@ -69,7 +69,8 @@ print("Clearing old FFMPEG folder")
 # Clear folder
 if os.path.isfile(ffmpeg_folder):
     os.remove(ffmpeg_folder)
-shutil.rmtree(ffmpeg_folder)
+if os.path.exists(ffmpeg_folder):
+    shutil.rmtree(ffmpeg_folder)
 
 print("Creating folders")
 # Create folder
