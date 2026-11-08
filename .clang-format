@@ -10,7 +10,7 @@ AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: false
 BinPackArguments: false
-BinPackParameters: false
+BinPackParameters: OnePerLine
 BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: false
