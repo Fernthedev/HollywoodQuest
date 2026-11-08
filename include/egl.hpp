@@ -5,8 +5,13 @@
 #include <GLES3/gl3.h>
 
 #ifdef GL_DEBUG
-#define EGL_BOOL_CHECK(action, msg) \
-    if (!action) logger.error(msg " egl error {}", Hollywood::eglGetErrorString())
+#define EGL_BOOL_CHECK(action, msg)                                            \
+    ({                                                                         \
+        auto&& __temp__ = action;                                              \
+        if (!__temp__)                                                         \
+            logger.error(msg " egl error {}", Hollywood::eglGetErrorString()); \
+        __temp__;                                                              \
+    })
 #define GL_ERR_CHECK(msg) \
     if (int e = glGetError()) logger.error(msg " gl error {}", e)
 #else
@@ -25,11 +30,10 @@ namespace Hollywood {
         ~EGLState();
     };
 
-    void InitEGL();
     EGLSurface MakeSurface(ANativeWindow* window);
-    void MakeCurrent(EGLSurface surface);
-    void SwapBuffers(EGLSurface surface);
-    void DestroySurface(EGLSurface surface);
+    bool MakeCurrent(EGLSurface surface);
+    bool SwapBuffers(EGLSurface surface);
+    bool DestroySurface(EGLSurface surface);
 
 #ifdef GL_DEBUG
     char const* eglGetErrorString();

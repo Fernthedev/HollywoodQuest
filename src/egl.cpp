@@ -37,50 +37,55 @@ static EGLDisplay display;
 static EGLConfig config;
 static EGLContext context;
 
-void Hollywood::InitEGL() {
+static inline bool InitEGL() {
     if (init)
-        return;
+        return true;
 
     logger.info("Initializing EGL render thread globals");
 
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    EGL_BOOL_CHECK(eglInitialize(display, 0, 0), "initialize");
+    if (!EGL_BOOL_CHECK(eglInitialize(display, 0, 0), "initialize"))
+        return false;
 
     logger.debug("EGL version {}", eglQueryString(display, EGL_VERSION));
 
     context = eglGetCurrentContext();
+    if (!context)
+        return false;
 
     EGLint numConfigs;
-    EGL_BOOL_CHECK(eglChooseConfig(display, attribs, &config, 1, &numConfigs), "choose config");
+    if (!EGL_BOOL_CHECK(eglChooseConfig(display, attribs, &config, 1, &numConfigs), "choose config"))
+        return false;
 
 #ifdef GL_DEBUG
-    eglLogConfig(display, config);
+    Hollywood::eglLogConfig(display, config);
 
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageCallback(glMessageCallback, 0);
+    glDebugMessageCallback(Hollywood::glMessageCallback, 0);
     GL_ERR_CHECK("callback");
 #endif
 
     init = true;
+    return true;
 }
 
 EGLSurface Hollywood::MakeSurface(ANativeWindow* window) {
-    InitEGL();
-
+    if (!InitEGL())
+        return nullptr;
     return eglCreateWindowSurface(display, config, window, 0);
 }
 
-void Hollywood::MakeCurrent(EGLSurface surface) {
-    EGL_BOOL_CHECK(eglMakeCurrent(display, surface, surface, context), "make current");
+bool Hollywood::MakeCurrent(EGLSurface surface) {
+    return EGL_BOOL_CHECK(eglMakeCurrent(display, surface, surface, context), "make current");
 }
 
-void Hollywood::SwapBuffers(EGLSurface surface) {
-    EGL_BOOL_CHECK(eglSwapBuffers(display, surface), "swap buffers");
+bool Hollywood::SwapBuffers(EGLSurface surface) {
+    return EGL_BOOL_CHECK(eglSwapBuffers(display, surface), "swap buffers");
 }
 
-void Hollywood::DestroySurface(EGLSurface surface) {
-    EGL_BOOL_CHECK(eglDestroySurface(display, surface), "destroy surface");
+bool Hollywood::DestroySurface(EGLSurface surface) {
+    return EGL_BOOL_CHECK(eglDestroySurface(display, surface), "destroy surface");
 }
 
 #ifdef GL_DEBUG
@@ -192,6 +197,7 @@ static char const* glSeverityString(GLenum severity) {
 #undef CASE_STR
 
 void Hollywood::glMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* msg, void const* data) {
-    logger.debug("{}: {} of {} severity, raised from {}: {}", id, glTypeString(type), glSeverityString(severity), glSourceString(source), msg);
+    if (severity != GL_DEBUG_SEVERITY_NOTIFICATION)
+        logger.debug("{}: {} of {} severity, raised from {}: {}", id, glTypeString(type), glSeverityString(severity), glSourceString(source), msg);
 }
 #endif

@@ -16,7 +16,6 @@ static void Java_log(JNIEnv* env, jobject, int level, jstring string) {
 
 static JNINativeMethod const methods[] = {
     {"log", "(ILjava/lang/String;)V", (void*) &Java_log},
-    {"nativeGetDeclaredMethod", "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", (void*) Java_getDeclaredMethod},
 };
 
 bool Hollywood::LoadClassAsset() {
@@ -61,19 +60,4 @@ void Hollywood::setMute(bool value) {
     MetaCore::Java::JNIFrame frame(env, 4);
 
     MetaCore::Java::RunMethod(env, instance, {"setMute", "(Z)V"}, value);
-}
-
-void Hollywood::sendSurfaceCapture(ANativeWindow* surface, float fovAdjustment, int selectedEye, int frameRate, bool showInhibitedLayers) {
-    if (!instance)
-        return;
-
-    JNIEnv* env = MetaCore::Java::GetEnv();
-    if (!env)
-        return;
-    MetaCore::Java::JNIFrame frame(env, 4);
-
-    jobject javaSurface = surface ? ANativeWindow_toSurface(env, surface) : nullptr;
-    MetaCore::Java::RunMethod(
-        env, instance, {"sendSurfaceCapture", "(Landroid/view/Surface;FIIZ)V"}, javaSurface, fovAdjustment, selectedEye, frameRate, showInhibitedLayers
-    );
 }
